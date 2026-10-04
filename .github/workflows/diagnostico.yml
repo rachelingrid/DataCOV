@@ -15,6 +15,7 @@ jobs:
       - name: Testes de conexao
         shell: bash
         run: |
+          set +e
           av() { echo "::warning title=$1::$2"; }
           H=ftp.datasus.gov.br
           av DNS "$(getent hosts $H | head -2 | tr '\n' ' ' || echo falhou)"
@@ -28,6 +29,6 @@ jobs:
           t0=$(date +%s); curl -sS --disable-epsv --max-time 120 -o /tmp/x.dbc "ftp://$H/dissemin/publicos/SIM/CID10/DORES/DORJ2019.dbc" 2>&1 | head -c 200; t1=$(date +%s)
           av "download DORJ2019" "$(stat -c %s /tmp/x.dbc 2>/dev/null || echo 0) bytes em $((t1-t0))s"
           av "IP externo do runner" "$(curl -sS --max-time 20 https://api.ipify.org 2>&1)"
-          for u in https://servicodados.ibge.gov.br/api/v3/agregados/7358/metadados https://apisidra.ibge.gov.br/values/t/6579/n1/all/v/9324/p/2019 https://s3.sa-east-1.amazonaws.com/ckan.saude.gov.br/; do
+          for u in https://servicodados.ibge.gov.br/api/v3/agregados/7358/metadados https://apisidra.ibge.gov.br/values/t/6579/n1/all/v/9324/p/2019 https://s3.sa-east-1.amazonaws.com/ckan.saude.gov.br/ https://opendatasus.saude.gov.br/ https://datasus.saude.gov.br/ http://tabnet.datasus.gov.br/ ftp://ftp2.datasus.gov.br/; do
             av "http $u" "$(curl -sS -o /dev/null -w '%{http_code} %{time_total}s' --max-time 60 "$u" 2>&1)"
           done
