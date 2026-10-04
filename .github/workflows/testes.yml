@@ -1,0 +1,25 @@
+name: Testes
+
+on:
+  push:
+    paths: ["octave/**", "config/**", "tests/**", "scripts/**", "tools/**"]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  testes:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get update -qq && sudo apt-get install -y -qq --no-install-recommends octave
+      - name: Descompactador DBC
+        run: make -C tools/blast-dbf && ./tools/blast-dbf/blast-dbf < tests/amostras/sids.dbc | cmp - tests/amostras/sids.dbf
+      - name: Testes Octave
+        run: octave-cli -q --path octave --path config --path tests --eval roda_testes
+      - name: Estatistica do site (JavaScript)
+        run: |
+          node -e "require('./docs/estat.js'); const E=globalThis.Estat;
+          const y=[310,325,298,340,352,349,470,455,498,481,512], p=[1,1.01,1.02,1.03,1.04,1.05,1.07,1.08,1.09,1.1,1.11].map(v=>Math.log(v*1e6));
+          const r=E.glmPoisson(y.map((_,i)=>[1,i>5?1:0]),y,p);
+          if (Math.abs(r.b[1]-0.322888)>1e-6) { console.error('glm divergiu', r.b); process.exit(1); }
+          if (Math.abs(E.tQuantil(0.975,9)-2.262157)>1e-5) process.exit(1); console.log('ok');"

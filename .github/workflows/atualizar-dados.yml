@@ -1,0 +1,130 @@
+name: Atualizar dados DATASUS
+
+# Baixa os microdados do DATASUS (SIM, SIM fetal e SIH), agrega em Octave e
+# grava as tabelas em dados/ e o painel em docs/. Roda:
+# Tambem baixa a populacao residente (IBGE/SIDRA) para as taxas por milhao.
+#   - manualmente (aba Actions > Atualizar dados DATASUS > Run workflow)
+#   - todo dia 5 de cada mes, apenas para os anos recentes (que ainda mudam)
+
+on:
+  workflow_dispatch:
+    inputs:
+      anos:
+        description: "Anos separados por espaco (ex.: 2015 2016 2019) ou 'todos'"
+        required: true
+        default: "todos"
+      fontes:
+        description: "Bases: SIM DOFET SIH SINASC"
+        required: true
+        default: "SIM DOFET SIH SINASC"
+  schedule:
+    - cron: "17 6 5 * *"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: atualizar-dados
+  cancel-in-progress: false
+
+jobs:
+  planejar:
+    runs-on: ubuntu-latest
+    outputs:
+      anos: ${{ steps.p.outputs.anos }}
+      fontes: ${{ steps.p.outputs.fontes }}
+    steps:
+      - id: p
+        shell: bash
+        run: |
+          ENTRADA="${{ github.event.inputs.anos }}"
+          if [ "${{ github.event_name }}" = "schedule" ]; then
+            A=$(date +%Y); ENTRADA="$((A-2)) $((A-1)) $A"
+          fi
+          if [ -z "$ENTRADA" ] || [ "$ENTRADA" = "todos" ]; then
+            ENTRADA="2014 2015 2016 2017 2018 2019 2020 2021 2022 2023 2024 2025 2026"
+          fi
+          JSON=$(echo $ENTRADA | tr ' ' '\n' | grep -E '^[0-9]{4}$' | jq -R . | jq -sc .)
+          echo "anos=$JSON" >> "$GITHUB_OUTPUT"
+          F="${{ github.event.inputs.fontes }}"
+          echo "fontes=${F:-SIM DOFET SIH SINASC}" >> "$GITHUB_OUTPUT"
+          echo "Anos: $JSON | Fontes: ${F:-SIM DOFET SIH SINASC}"
+
+  coletar:
+    needs: planejar
+    runs-on: ubuntu-latest
+    timeout-minutes: 340
+    strategy:
+      fail-fast: false
+      max-parallel: 4          # gentil com o FTP do DATASUS
+      matrix:
+        ano: ${{ fromJson(needs.planejar.outputs.anos) }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Instalar Octave
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq --no-install-recommends octave
+      - name: Compilar descompactador DBC
+        run: make -C tools/blast-dbf
+      - name: Testes
+        run: octave-cli -q --path octave --path config --path tests --eval roda_testes
+      - name: Coletar ${{ matrix.ano }}
+        run: bash scripts/coleta_ano.sh ${{ matrix.ano }} "${{ needs.planejar.outputs.fontes }}"
+      - name: Guardar parte
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: parte-${{ matrix.ano }}
+          path: |
+            dados/partes/${{ matrix.ano }}*
+            dados/cubo/${{ matrix.ano }}*
+          if-no-files-found: ignore
+          retention-days: 7
+
+  consolidar:
+    needs: coletar
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Instalar Octave
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq --no-install-recommends octave
+      - name: Baixar partes novas
+        uses: actions/download-artifact@v4
+        with:
+          pattern: parte-*
+          path: novas
+          merge-multiple: true
+      - name: Juntar com as partes existentes
+        shell: bash
+        run: |
+          mkdir -p dados/partes
+          # Os CSVs de dados so existem quando a coleta da base teve sucesso;
+          # se falhou, o arquivo anterior do repositorio fica intacto.
+          mkdir -p dados/cubo
+          if [ -d novas ]; then
+            find novas -name '*_cubo.csv' -exec cp {} dados/cubo/ \;
+            find novas -name '*.csv' ! -name '*_cubo.csv' -exec cp {} dados/partes/ \;
+          fi
+          ls -la dados/partes dados/cubo
+      - name: Populacao (IBGE/SIDRA)
+        continue-on-error: true      # se o IBGE falhar, mantem dados/populacao_uf.csv anterior
+        run: bash scripts/coleta_populacao.sh
+      - name: Consolidar
+        run: octave-cli -q --path octave --path config --eval consolida
+      - name: Comparar faixas etarias (pre x pos)
+        run: octave-cli -q --path octave --path config --eval compara_faixas
+      - name: Nomes de CID e procedimentos (opcional)
+        continue-on-error: true
+        run: bash scripts/coleta_tabelas.sh
+      - name: Montar dados do site de comparacao
+        run: octave-cli -q --path octave --path config --eval consolida_cubo
+      - name: Gravar no repositorio
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898333+github-actions[bot]@users.noreply.github.com"
+          git add dados docs/dados.js docs/faixas.js docs/cubo
+          if git diff --cached --quiet; then echo "Sem mudancas"; exit 0; fi
+          git commit -m "Atualiza dados DATASUS ($(date +%Y-%m-%d))"
+          git pull --rebase
+          git push

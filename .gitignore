@@ -1,0 +1,6 @@
+*.dbc
+*.dbf
+!tests/amostras/*.dbc
+!tests/amostras/*.dbf
+tools/blast-dbf/blast-dbf
+novas/
