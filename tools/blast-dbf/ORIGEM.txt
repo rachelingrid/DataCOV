@@ -1,0 +1,4 @@
+Codigo copiado sem alteracoes de https://github.com/eaglebh/blast-dbf
+(Daniela Petruzalek, Pablo Fonseca; baseado no blast de Mark Adler, zlib/contrib).
+Licenca zlib - ver cabecalho de blast-dbf.c e blast.h.
+Usado para descompactar os arquivos .dbc do DATASUS em .dbf.

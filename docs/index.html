@@ -1,0 +1,589 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Antes e Depois SUS</title>
+<style>
+  :root {
+    color-scheme: light;
+    --surface-0: #f4f3ef; --surface-1: #fcfcfb; --surface-2: #efeee8; --border: #dddcd5; --grid: #e8e7e1;
+    --text-primary: #0b0b0b; --text-secondary: #52514e; --text-muted: #7a7974;
+    --pre: #2a78d6; --pos: #eb6834; --trans: #9a998f; --ink: #33322f; --aviso: #c98500;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) {
+      color-scheme: dark;
+      --surface-0: #121211; --surface-1: #1a1a19; --surface-2: #232321; --border: #34332f; --grid: #2a2a27;
+      --text-primary: #ffffff; --text-secondary: #c3c2b7; --text-muted: #8f8e85;
+      --pre: #3987e5; --pos: #d95926; --trans: #75746c; --ink: #e6e5de; --aviso: #eda100;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --surface-0: #121211; --surface-1: #1a1a19; --surface-2: #232321; --border: #34332f; --grid: #2a2a27;
+    --text-primary: #ffffff; --text-secondary: #c3c2b7; --text-muted: #8f8e85;
+    --pre: #3987e5; --pos: #d95926; --trans: #75746c; --ink: #e6e5de; --aviso: #eda100;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--surface-0); color: var(--text-primary);
+         font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 1040px; margin: 0 auto; padding: 24px 16px 56px; }
+  a { color: var(--pre); }
+  h1 { font-size: 24px; margin: 0 0 4px; letter-spacing: -0.015em; }
+  h2 { font-size: 16px; margin: 0 0 4px; }
+  .sub { color: var(--text-secondary); margin: 0 0 18px; font-size: 14px; }
+  .nav { font-size: 13px; margin: 0 0 8px; display: flex; gap: 14px; flex-wrap: wrap; }
+  .cartao { background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 16px; }
+  .linha { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 12px; }
+  .linha > label { display: flex; flex-direction: column; font-size: 12px; color: var(--text-secondary); gap: 4px; flex: 1 1 170px; min-width: 0; }
+  select, input[type=text] { width: 100%; font: inherit; font-size: 14px; padding: 8px 10px; border-radius: 8px;
+           border: 1px solid var(--border); background: var(--surface-1); color: var(--text-primary); }
+  .rot { font-size: 12px; color: var(--text-secondary); margin: 0 0 4px; }
+  .atalhos { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+  .bt { font: inherit; font-size: 13px; padding: 6px 12px; border-radius: 999px; border: 1px solid var(--border);
+        background: var(--surface-1); color: var(--text-primary); cursor: pointer; }
+  .bt:hover { background: var(--surface-2); }
+  .bt.primario { background: var(--text-primary); color: var(--surface-1); border-color: var(--text-primary); font-weight: 600; padding: 9px 18px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; padding: 6px; border: 1px solid var(--border); border-radius: 8px; min-height: 44px; background: var(--surface-1); align-items: center; }
+  .chip { display: inline-flex; align-items: center; gap: 6px; background: var(--surface-2); border-radius: 999px; padding: 3px 4px 3px 10px; font-size: 13px; font-variant-numeric: tabular-nums; }
+  .chip button { border: 0; background: transparent; color: var(--text-muted); cursor: pointer; font-size: 15px; line-height: 1; padding: 0 6px; }
+  .chips input { flex: 1 1 160px; border: 0; padding: 6px; min-width: 120px; background: transparent; }
+  .chips input:focus { outline: none; }
+  .sugestoes { position: relative; }
+  .sugestoes ul { position: absolute; z-index: 5; left: 0; right: 0; top: 2px; margin: 0; padding: 4px; list-style: none;
+                  background: var(--surface-1); border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,.14); max-height: 320px; overflow: auto; }
+  .sugestoes li { padding: 6px 8px; border-radius: 6px; cursor: pointer; display: flex; gap: 10px; font-size: 13px; }
+  .sugestoes li:hover, .sugestoes li.ativo { background: var(--surface-2); }
+  .sugestoes .c { font-weight: 600; min-width: 92px; font-variant-numeric: tabular-nums; }
+  .sugestoes .n { color: var(--text-secondary); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .sugestoes .t { color: var(--text-muted); font-variant-numeric: tabular-nums; }
+  .acoes { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+  .opc { font-size: 13px; color: var(--text-secondary); display: inline-flex; gap: 6px; align-items: center; }
+  .aviso { font-size: 13px; color: var(--text-secondary); border-left: 3px solid var(--aviso); padding: 4px 10px; margin: 10px 0 0; }
+  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin-top: 12px; }
+  .kpi { border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; }
+  .kpi .r { font-size: 12px; color: var(--text-secondary); display: flex; gap: 6px; align-items: center; }
+  .kpi .v { font-size: 24px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .kpi .d { font-size: 12px; color: var(--text-muted); }
+  .sw { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+  .legenda { display: flex; gap: 16px; flex-wrap: wrap; font-size: 12px; color: var(--text-secondary); margin: 6px 0 10px; }
+  .legenda span { display: inline-flex; align-items: center; gap: 6px; }
+  .grade { display: grid; grid-template-columns: 64px 1fr 1fr; gap: 0 14px; align-items: stretch; }
+  .grade .cab { font-size: 13px; font-weight: 600; padding-bottom: 6px; }
+  .grade .fx { font-size: 13px; color: var(--text-secondary); display: flex; align-items: center; font-variant-numeric: tabular-nums; border-top: 1px solid var(--grid); }
+  .cel { border-top: 1px solid var(--grid); padding: 6px 0 4px; }
+  .cel .res { font-size: 12px; color: var(--text-secondary); font-variant-numeric: tabular-nums; display: flex; justify-content: space-between; gap: 6px; flex-wrap: wrap; }
+  .cel .res b { color: var(--text-primary); }
+  .sig { font-size: 11px; font-weight: 600; padding: 0 6px; border-radius: 999px; border: 1px solid var(--text-primary); color: var(--text-primary); }
+  .ns { font-size: 11px; color: var(--text-muted); }
+  svg { display: block; width: 100%; height: auto; overflow: visible; }
+  .legenda svg { display: inline-block; width: 12px; height: 12px; }
+  svg text { fill: var(--text-muted); font-size: 10px; font-family: inherit; }
+  .forest { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .forest h3 { font-size: 13px; margin: 0 0 4px; }
+  .rolagem { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 12.5px; font-variant-numeric: tabular-nums; }
+  th, td { padding: 5px 7px; border-bottom: 1px solid var(--grid); text-align: right; white-space: nowrap; }
+  th:nth-child(-n+2), td:nth-child(-n+2) { text-align: left; }
+  th { color: var(--text-secondary); font-weight: 500; }
+  th.pre { box-shadow: inset 0 -2px var(--pre); } th.pos { box-shadow: inset 0 -2px var(--pos); } th.tr { box-shadow: inset 0 -2px var(--trans); }
+  tr.total td { font-weight: 600; border-top: 2px solid var(--border); }
+  td.exc { color: var(--text-muted); }
+  .dica { position: fixed; pointer-events: none; background: var(--surface-1); border: 1px solid var(--border); border-radius: 8px;
+          padding: 8px 10px; font-size: 12px; box-shadow: 0 4px 16px rgba(0,0,0,.14); opacity: 0; transition: opacity .1s; z-index: 10; white-space: nowrap; }
+  .vazio { padding: 32px 0; text-align: center; color: var(--text-muted); }
+  .nota { font-size: 13px; color: var(--text-secondary); } .nota li { margin-bottom: 6px; }
+  .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  .seg button { font: inherit; font-size: 12.5px; padding: 5px 10px; border: 0; background: var(--surface-1); color: var(--text-secondary); cursor: pointer; }
+  .seg button[aria-pressed="true"] { background: var(--text-primary); color: var(--surface-1); }
+  .cabsec { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; flex-wrap: wrap; }
+  #resultado[hidden] { display: none; }
+  @media (max-width: 640px) {
+    .grade { grid-template-columns: 44px 1fr 1fr; gap: 0 8px; }
+    .forest { grid-template-columns: 1fr; }
+    h1 { font-size: 20px; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <div class="nav"><a href="painel.html">Painel dos grupos do estudo</a><a href="faixas.html">Grupos do estudo por faixa</a></div>
+  <h1>Antes e depois da pandemia</h1>
+  <p class="sub">Escolha a base, o critério e os códigos (CID-10 ou procedimento SIGTAP). O site monta os casos ano a ano, por faixa etária, em homens e mulheres, e testa a diferença entre os períodos.</p>
+
+  <section class="cartao" aria-label="Seleção">
+    <div class="linha">
+      <label>Base <select id="s-fonte"></select></label>
+      <label>Critério <select id="s-tipo"></select></label>
+      <label id="l-conta">Contar <select id="s-conta">
+        <option value="n">Internações</option><option value="ob">Óbitos durante a internação</option></select></label>
+      <label>Exibir <select id="s-medida">
+        <option value="taxa">Taxa por milhão de habitantes</option><option value="casos">Número de casos</option></select></label>
+    </div>
+    <p class="rot">Atalhos</p>
+    <div class="atalhos" id="atalhos"></div>
+    <p class="rot">Códigos: digite o código ou parte do nome. Um prefixo inclui os subcódigos (I26 = I26.0 + I26.9).</p>
+    <div class="chips" id="chips"><input type="text" id="busca" placeholder="ex.: I80.2, embolia, 0408050012" autocomplete="off" aria-label="Buscar código"></div>
+    <div class="sugestoes"><ul id="sug" hidden></ul></div>
+    <div class="acoes" style="margin-top:12px">
+      <button class="bt primario" id="gerar">Gerar comparação</button>
+      <label class="opc"><input type="checkbox" id="todas-faixas"> incluir 0–19 e 90+</label>
+    </div>
+    <p class="aviso" id="aviso-sel" hidden></p>
+  </section>
+
+  <div id="resultado" hidden>
+    <section class="cartao">
+      <h2 id="r-titulo"></h2>
+      <p class="sub" style="margin:0" id="r-sub"></p>
+      <div class="kpis" id="kpis"></div>
+      <p class="aviso" id="r-aviso" hidden></p>
+    </section>
+
+    <section class="cartao">
+      <div class="cabsec">
+        <div><h2>Ano a ano, por faixa etária</h2>
+          <p class="sub" style="margin:0" id="g-sub"></p></div>
+        <div class="seg" role="group" aria-label="Escala"><button id="esc-propria" aria-pressed="true">Escala de cada faixa</button><button id="esc-comum" aria-pressed="false">Escala comum</button></div>
+      </div>
+      <div class="legenda">
+        <span><i class="sw" style="background:var(--pre)"></i><span id="lg-pre">Antes</span></span>
+        <span><i class="sw" style="background:var(--trans)"></i>2020 (excluído)</span>
+        <span><i class="sw" style="background:var(--pos)"></i><span id="lg-pos">Depois</span></span>
+        <span>– – média do período</span>
+        <span>barra clara = fora da comparação</span>
+      </div>
+      <div class="grade" id="grade"></div>
+    </section>
+
+    <section class="cartao">
+      <div class="cabsec">
+        <div><h2>Razão de taxas depois ÷ antes</h2>
+          <p class="sub" style="margin:0" id="f-sub"></p></div>
+        <div class="seg" role="group" aria-label="Modelo"><button id="mod-a" aria-pressed="true">Depois × antes</button><button id="mod-b" aria-pressed="false">Descontando a tendência</button></div>
+      </div>
+      <div class="legenda"><span><svg width="12" height="12" viewBox="0 0 12 12"><circle cx="6" cy="6" r="4.5" fill="var(--ink)"/></svg>significativo (Holm, p&lt;0,05)</span>
+        <span><svg width="12" height="12" viewBox="0 0 12 12"><circle cx="6" cy="6" r="4" fill="none" stroke="var(--ink)" stroke-width="1.6"/></svg>não significativo</span><span>linha = IC 95%</span></div>
+      <div class="forest" id="forest"></div>
+    </section>
+
+    <section class="cartao">
+      <div class="cabsec"><h2>Tabela</h2><button class="bt" id="baixar">Baixar CSV</button></div>
+      <div class="rolagem" id="tabela" style="margin-top:8px"></div>
+    </section>
+  </div>
+
+  <section class="cartao nota">
+    <h2>Como ler</h2>
+    <ul>
+      <li><b>Taxa por milhão</b> = casos ÷ população do mesmo sexo e faixa (IBGE) × 1.000.000. Compara faixas de tamanhos diferentes e desconta o crescimento da população.</li>
+      <li><b>RR</b> (razão de taxas) = taxa média depois ÷ taxa média antes. RR 1,30 = 30% a mais; se o IC 95% não inclui 1, a diferença é significativa.</li>
+      <li><b>Descontando a tendência</b> (série interrompida): projeta a tendência de 2014–2019 e mede o salto em 2021 acima dela. Separa o efeito do período pós-pandemia de um aumento que já vinha acontecendo.</li>
+      <li><b>Holm</b>: p corrigido para o número de faixas × sexos testados.</li>
+      <li><b>Comparação simétrica</b>: o mesmo número de anos antes e depois de 2020. "Depois" = anos completos a partir de 2021; "antes" = o mesmo número de anos imediatamente anteriores a 2020. 2020 e anos incompletos ficam fora. A tendência (série interrompida) usa todos os anos completos desde 2014.</li>
+      <li>SIH conta internações (não pessoas), pelo ano de processamento. Em <i>qualquer diagnóstico</i> e <i>qualquer menção</i>, um registro com dois dos códigos escolhidos conta duas vezes.</li>
+    </ul>
+    <p id="gerado"></p>
+  </section>
+  <div class="dica" id="dica"></div>
+</main>
+
+<script src="cubo/meta.js"></script>
+<script src="cubo/nomes.js" onerror="window.NOMES={}"></script>
+<script src="estat.js"></script>
+<script>
+(function () {
+  'use strict';
+  const $ = (id) => document.getElementById(id);
+  const M = window.META, NOMES = window.NOMES || {}, E = window.Estat;
+  if (!M || !M.fontes || !M.fontes.length) {
+    document.querySelector('main').insertAdjacentHTML('beforeend', '<p class="vazio">Ainda não há dados. Rode o workflow "Atualizar dados DATASUS" no GitHub.</p>');
+    return;
+  }
+
+  // ---------- carregamento sob demanda (funciona offline, sem servidor) ----------
+  const CUBO = {}, INDICE = {}, cacheLinhas = {};
+  window.CUBO_ADD = (k, txt) => { CUBO[k] = txt; };
+  window.INDICE_ADD = (f, obj) => { INDICE[f] = obj; };
+  function script(src) {
+    return new Promise((ok, erro) => {
+      const s = document.createElement('script'); s.src = src;
+      s.onload = ok; s.onerror = () => erro(new Error('não carregou ' + src));
+      document.head.appendChild(s);
+    });
+  }
+  const carrega = (k) => CUBO[k] ? Promise.resolve() : script('cubo/' + k + '.js');
+  function linhas(k) {
+    if (cacheLinhas[k]) return cacheLinhas[k];
+    const out = [];
+    (CUBO[k] || '').split('\n').forEach(l => {
+      if (!l) return;
+      const c = l.split(',');
+      out.push([c[0], +c[1], +c[2], +c[3], +c[4], +c[5]]);    // codigo, ano, sexo, faixa, n, obitos
+    });
+    return (cacheLinhas[k] = out);
+  }
+
+  // ---------- configuracao ----------
+  const TIPOS = {
+    SIH: [['DP', 'Diagnóstico principal'], ['DQ', 'Qualquer diagnóstico da internação'], ['PR', 'Procedimento realizado (SIGTAP)']],
+    SIM: [['CB', 'Causa básica do óbito'], ['CQ', 'Qualquer menção no atestado']]
+  };
+  const NFONTE = { SIH: 'Internações (SIH)', SIM: 'Óbitos (SIM)' };
+  const ATALHOS = [
+    { n: 'TVP', c: ['I801', 'I802', 'I803', 'I822', 'O223', 'O871'] },
+    { n: 'Embolia pulmonar', c: ['I26'] },
+    { n: 'TVP + embolia pulmonar', c: ['I801', 'I802', 'I803', 'I822', 'O223', 'O871', 'I26'] },
+    { n: 'Trombose (todas)', c: ['I80', 'I81', 'I82', 'I676', 'I74', 'O223', 'O225', 'O871', 'O873'] },
+    { n: 'Embolia (qualquer)', c: ['I26', 'I74', 'O88', 'T790', 'T800', 'T817'] },
+    { n: 'Amputação membros inferiores', c: ['0408050012', '0408050020'], pr: true },
+    { n: 'Amputação (todas)', c: ['0408050012', '0408050020', '0408020024', '0408020016', '0408060042'], pr: true }
+  ];
+  const SX = [[1, 'Homens'], [2, 'Mulheres']];
+  const FX_ADULTO = [3, 4, 5, 6, 7, 8, 9];             // 20-29 ... 80-89 (indices 1-based de META.faixas)
+  const FX_TODAS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+  const anosTodos = M.pre.concat(M.transicao, M.pos);
+  const fmt = (v, d = 0) => v == null || !isFinite(v) ? '–' : v.toLocaleString('pt-BR', { minimumFractionDigits: d, maximumFractionDigits: d });
+  const fp = (p) => p == null || isNaN(p) ? '–' : p < 0.001 ? '<0,001' : fmt(p, 3);
+  const normal = (s) => s.toUpperCase().replace(/[.\s-]/g, '');
+  const ehProc = (c) => /^\d+$/.test(c);
+  const nomeDe = (c) => NOMES[c] || (c.length === 3 ? NOMES[c + '0'] && NOMES[c] : '') || '';
+  const rotulo = (c) => ehProc(c) ? c : c.length > 3 ? c.slice(0, 3) + '.' + c.slice(3) : c;
+
+  let codigos = [], escala = 'propria', modelo = 'a', ultimo = null;
+
+  // ---------- controles ----------
+  $('s-fonte').innerHTML = M.fontes.filter(f => TIPOS[f]).map(f => `<option value="${f}">${NFONTE[f]}</option>`).join('');
+  function atualizaTipos(manter) {
+    const f = $('s-fonte').value;
+    $('s-tipo').innerHTML = TIPOS[f].map(([v, t]) => `<option value="${v}">${t}</option>`).join('');
+    if (manter && TIPOS[f].some(([v]) => v === manter)) $('s-tipo').value = manter;
+    $('l-conta').style.display = f === 'SIH' ? '' : 'none';
+    if (!INDICE[f]) script(`cubo/indice_${f}.js`).catch(() => {});
+  }
+  $('atalhos').innerHTML = ATALHOS.map((a, i) => `<button class="bt" data-i="${i}">${a.n}</button>`).join('');
+  $('atalhos').addEventListener('click', (e) => {
+    const b = e.target.closest('button'); if (!b) return;
+    const a = ATALHOS[+b.dataset.i];
+    if (a.pr) { $('s-fonte').value = 'SIH'; atualizaTipos('PR'); }
+    else if ($('s-tipo').value === 'PR') atualizaTipos('DP');
+    codigos = a.c.slice(); desenhaChips(); verificaSel();
+  });
+
+  function desenhaChips() {
+    const box = $('chips'), inp = $('busca');
+    box.querySelectorAll('.chip').forEach(c => c.remove());
+    codigos.forEach((c, i) => {
+      const el = document.createElement('span'); el.className = 'chip';
+      el.title = nomeDe(c);
+      el.innerHTML = `${rotulo(c)}<button aria-label="remover ${c}" data-i="${i}">×</button>`;
+      box.insertBefore(el, inp);
+    });
+  }
+  $('chips').addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-i]');
+    if (b) { codigos.splice(+b.dataset.i, 1); desenhaChips(); verificaSel(); } else $('busca').focus();
+  });
+  function adiciona(c) {
+    c = normal(c); if (!c) return;
+    if (/X$/.test(c) && c.length === 4) c = c.slice(0, 3);
+    if (!codigos.includes(c)) codigos.push(c);
+    $('busca').value = ''; $('sug').hidden = true; desenhaChips(); verificaSel();
+  }
+  function verificaSel() {
+    const t = $('s-tipo').value, av = $('aviso-sel'), msgs = [];
+    const pr = codigos.filter(ehProc), cid = codigos.filter(c => !ehProc(c));
+    if (t === 'PR' && cid.length) msgs.push('Critério "procedimento" usa códigos SIGTAP (10 dígitos); os CIDs escolhidos serão ignorados.');
+    if (t !== 'PR' && pr.length) msgs.push('Códigos de procedimento só valem com o critério "Procedimento realizado".');
+    if ((t === 'DQ' || t === 'CQ') && cid.length > 1) msgs.push('Em "qualquer diagnóstico/menção", um registro com dois dos códigos escolhidos é contado duas vezes. Para contagem exata de pessoas/registros, use diagnóstico principal ou causa básica.');
+    av.hidden = !msgs.length; av.innerHTML = msgs.join('<br>');
+  }
+
+  // busca com sugestoes
+  let sugAtiva = -1, sugLista = [];
+  $('busca').addEventListener('input', () => {
+    const q = $('busca').value.trim(), f = $('s-fonte').value, t = $('s-tipo').value, ul = $('sug');
+    if (q.length < 2) { ul.hidden = true; return; }
+    const ind = (INDICE[f] || {})[t] || {};
+    const qn = normal(q), ql = q.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+    const cods = Object.keys(ind);
+    sugLista = cods.filter(c => c.startsWith(qn) || (nomeDe(c) || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').includes(ql))
+                   .sort((a, b) => ind[b] - ind[a]).slice(0, 14);
+    // prefixo de 3 caracteres como opcao agrupada
+    if (/^[A-Z]\d{2}$/.test(qn) && cods.some(c => c.startsWith(qn) && c !== qn)) sugLista.unshift(qn + '*');
+    sugAtiva = -1;
+    ul.innerHTML = sugLista.map((c, i) => {
+      const grupo = c.endsWith('*'), cc = grupo ? c.slice(0, -1) : c;
+      const tot = grupo ? cods.filter(k => k.startsWith(cc)).reduce((s, k) => s + ind[k], 0) : ind[c];
+      return `<li data-c="${cc}" data-i="${i}"><span class="c">${grupo ? cc + ' (todos)' : rotulo(c)}</span><span class="n">${grupo ? 'todos os subcódigos' : (nomeDe(c) || '')}</span><span class="t">${fmt(tot)}</span></li>`;
+    }).join('') || `<li data-c="${qn}"><span class="c">${q}</span><span class="n">adicionar mesmo assim (sem registros nesta base)</span></li>`;
+    ul.hidden = false;
+  });
+  $('busca').addEventListener('keydown', (e) => {
+    const itens = [...$('sug').querySelectorAll('li')];
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault(); if (!itens.length) return;
+      sugAtiva = (sugAtiva + (e.key === 'ArrowDown' ? 1 : -1) + itens.length) % itens.length;
+      itens.forEach((li, i) => li.classList.toggle('ativo', i === sugAtiva));
+    } else if (e.key === 'Enter' || e.key === ',') {
+      e.preventDefault();
+      if (sugAtiva >= 0 && itens[sugAtiva]) adiciona(itens[sugAtiva].dataset.c);
+      else $('busca').value.split(/[,;\s]+/).forEach(adiciona);
+    } else if (e.key === 'Backspace' && !$('busca').value && codigos.length) { codigos.pop(); desenhaChips(); verificaSel(); }
+    else if (e.key === 'Escape') $('sug').hidden = true;
+  });
+  $('sug').addEventListener('mousedown', (e) => { const li = e.target.closest('li'); if (li) { e.preventDefault(); adiciona(li.dataset.c); } });
+  $('busca').addEventListener('blur', () => setTimeout(() => $('sug').hidden = true, 150));
+  $('s-fonte').addEventListener('change', () => { atualizaTipos($('s-tipo').value); verificaSel(); });
+  $('s-tipo').addEventListener('change', verificaSel);
+
+  // ---------- calculo ----------
+  function chavesArquivos(f, t, cods) {
+    const ks = new Set(), todos = Object.keys(M.arquivos || {});
+    cods.forEach(c => {
+      if (t === 'PR') {
+        if (!ehProc(c)) return;
+        const p = `${f}_PR_${c.slice(0, 4)}`;
+        todos.filter(k => c.length >= 4 ? k === p : k.startsWith(`${f}_PR_${c}`)).forEach(k => ks.add(k));
+      } else {
+        if (ehProc(c)) return;
+        const k = `${f}_${t}_${c[0]}`; if (k in (M.arquivos || {})) ks.add(k);
+      }
+    });
+    return [...ks];
+  }
+
+  async function gerar() {
+    const f = $('s-fonte').value, t = $('s-tipo').value, conta = f === 'SIH' ? $('s-conta').value : 'n';
+    const cods = codigos.filter(c => t === 'PR' ? ehProc(c) : !ehProc(c));
+    if (!cods.length) { $('aviso-sel').hidden = false; $('aviso-sel').textContent = 'Escolha ao menos um código válido para o critério.'; return; }
+    $('gerar').disabled = true; $('gerar').textContent = 'Calculando…';
+    try {
+      const ks = chavesArquivos(f, t, cods);
+      await Promise.all(ks.map(carrega));
+      // y[sexo][faixa][ano]
+      const y = {};
+      const col = conta === 'ob' ? 5 : 4;
+      ks.forEach(k => linhas(k).forEach(l => {
+        if (!cods.some(c => l[0].startsWith(c))) return;
+        const s = l[2], fx = l[3], a = l[1];
+        ((y[s] = y[s] || {})[fx] = y[s][fx] || {})[a] = (y[s][fx][a] || 0) + l[col];
+      }));
+      ultimo = calcula(f, t, conta, cods, y);
+      desenhaTudo();
+      location.hash = new URLSearchParams({ f, t, o: conta, m: $('s-medida').value, c: cods.join(','), fx: $('todas-faixas').checked ? 'todas' : 'adulto' }).toString();
+    } catch (e) {
+      $('aviso-sel').hidden = false; $('aviso-sel').textContent = 'Erro ao carregar os dados: ' + e.message;
+    } finally {
+      $('gerar').disabled = false; $('gerar').textContent = 'Gerar comparação';
+    }
+  }
+
+  function calcula(f, t, conta, cods, y) {
+    const meses = (M.meses || {})[f] || {};
+    const anos = anosTodos.filter(a => (meses[a] || 0) > 0);
+    const temPop = M.pop && Object.keys(M.pop).length > 0;
+    const pop = (a, s, fx) => temPop && M.pop[a] ? (M.pop[a][s === 1 ? 'M' : 'F'] || [])[fx - 1] || 0 : 0;
+    const usado = (a) => !M.transicao.includes(a) && (meses[a] >= 12 || M.incluir_parciais);
+    const fxs = $('todas-faixas').checked ? FX_TODAS : FX_ADULTO;
+    const sim = M.simetrico !== 0;
+    const J = E.janela(anos.filter(usado), M.pre, M.pos, sim);
+
+    function estrato(getY, getPop) {
+      const serie = anos.map(a => {
+        const yy = getY(a), pp = getPop(a), ex = temPop ? pp * Math.min(meses[a], 12) / 12 : Math.min(meses[a], 12) / 12;
+        return { ano: a, y: yy, pop: pp, expo: ex, meses: meses[a], usado: usado(a) && ex > 0,
+                 per: M.pre.includes(a) ? 'pre' : M.transicao.includes(a) ? 'trans' : 'pos',
+                 taxa: temPop && ex > 0 ? yy / ex * 1e6 : null,
+                 jan: J.pre.includes(a) || J.pos.includes(a) };
+      });
+      const u = serie.filter(d => d.usado);
+      const R = E.testa(u.map(d => d.ano), u.map(d => d.y), u.map(d => d.expo), M.pre, M.pos, M.transicao[0], 0.05, 3, sim);
+      return { serie, R };
+    }
+    const est = [];
+    SX.forEach(([s, ns]) => fxs.forEach(fx => {
+      const e = estrato(a => ((y[s] || {})[fx] || {})[a] || 0, a => pop(a, s, fx));
+      e.s = s; e.ns = ns; e.fx = fx; e.nfx = M.faixas[fx - 1]; est.push(e);
+    }));
+    // Holm entre os estratos exibidos
+    const hA = E.holm(est.map(e => e.R.ok ? e.R.p : null)), hB = E.holm(est.map(e => e.R.pSalto ?? null));
+    est.forEach((e, i) => { e.R.pHolm = hA[i]; e.R.pSaltoHolm = hB[i]; });
+    // total (todas as idades, ambos os sexos, inclusive ignorados)
+    const total = estrato(a => Object.values(y).reduce((s, porFx) => s + Object.values(porFx).reduce((t2, porAno) => t2 + (porAno[a] || 0), 0), 0),
+                          a => temPop && M.pop[a] ? ['M', 'F'].reduce((s, k) => s + (M.pop[a][k] || []).reduce((t2, v) => t2 + v, 0), 0) : 0);
+    return { f, t, conta, cods, anos, est, total, temPop, meses, J, sim };
+  }
+
+  // ---------- desenho ----------
+  const corPer = { pre: 'var(--pre)', trans: 'var(--trans)', pos: 'var(--pos)' };
+  function valor(d) { return $('s-medida').value === 'taxa' && ultimo.temPop ? d.taxa : d.y; }
+  function decs() { return $('s-medida').value === 'taxa' && ultimo.temPop ? 1 : 0; }
+  function nomeMedida() {
+    const base = ultimo.f === 'SIM' ? 'óbitos' : ultimo.conta === 'ob' ? 'óbitos hospitalares' : 'internações';
+    return $('s-medida').value === 'taxa' && ultimo.temPop ? `${base} por milhão de hab.` : base;
+  }
+  function desenhaTudo() {
+    if (!ultimo) return;
+    $('resultado').hidden = false;
+    const U = ultimo, nT = TIPOS[U.f].find(([v]) => v === U.t)[1];
+    $('r-titulo').textContent = U.cods.map(rotulo).join(' + ');
+    const nomes = U.cods.map(c => nomeDe(c) ? `${rotulo(c)} ${nomeDe(c)}` : '').filter(Boolean);
+    $('r-sub').textContent = `${NFONTE[U.f]} · ${nT} · contando ${U.f === 'SIH' && U.conta === 'ob' ? 'óbitos durante a internação' : U.f === 'SIH' ? 'internações' : 'óbitos'} · Brasil${nomes.length ? ' — ' + nomes.join('; ') : ''}`;
+    const R = U.total.R, mm = (per) => { const u = U.total.serie.filter(d => d.jan && d.per === per); return u.length ? u.reduce((s, d) => s + d.y, 0) / u.length : null; };
+    const faixaAnos = (a) => a.length ? (a.length > 1 ? `${a[0]}–${a[a.length - 1]}` : `${a[0]}`) : '–';
+    $('lg-pre').textContent = `Antes (${faixaAnos(U.J.pre)})`; $('lg-pos').textContent = `Depois (${faixaAnos(U.J.pos)})`;
+    const sig = (p) => p != null && p < 0.05;
+    $('kpis').innerHTML = `
+      <div class="kpi"><div class="r"><i class="sw" style="background:var(--pre)"></i>Média anual antes</div><div class="v">${fmt(mm('pre'))}</div><div class="d">${faixaAnos(U.J.pre)} · ${fmt(R.taxaPre, 1)} por milhão</div></div>
+      <div class="kpi"><div class="r"><i class="sw" style="background:var(--pos)"></i>Média anual depois</div><div class="v">${fmt(mm('pos'))}</div><div class="d">${faixaAnos(U.J.pos)} · ${fmt(R.taxaPos, 1)} por milhão</div></div>
+      <div class="kpi"><div class="r">Razão de taxas (todas as idades)</div><div class="v">${R.ok ? fmt(R.rr, 2) : '–'}</div><div class="d">IC95 ${fmt(R.rrInf, 2)}–${fmt(R.rrSup, 2)} · p ${fp(R.p)}${sig(R.p) ? ' · significativo' : ''}</div></div>
+      <div class="kpi"><div class="r">Salto em 2021 além da tendência</div><div class="v">${R.salto != null ? fmt(R.salto, 2) : '–'}</div><div class="d">IC95 ${fmt(R.saltoInf, 2)}–${fmt(R.saltoSup, 2)} · p ${fp(R.pSalto)} · tendência pré ${fmt(R.tend, 1)}%/ano</div></div>`;
+    const avisos = [];
+    if (!U.temPop) avisos.push('População por sexo e idade indisponível: o site mostra só contagens, e os testes comparam número de casos por ano.');
+    const parc = U.anos.filter(a => U.meses[a] < 12);
+    if (parc.length) avisos.push('Ano(s) incompleto(s), fora das médias e testes: ' + parc.map(a => `${a} (${U.meses[a]} meses)`).join(', ') + '.');
+    const soTend = U.anos.filter(a => !M.transicao.includes(a) && U.meses[a] >= 12 && !U.J.pre.includes(a) && !U.J.pos.includes(a));
+    if (U.sim) avisos.push(`Comparação simétrica: ${U.J.pre.length} anos antes × ${U.J.pos.length} anos depois de 2020.` + (soTend.length ? ` ${soTend.join(', ')} ${soTend.length > 1 ? 'entram' : 'entra'} só no cálculo da tendência.` : ''));
+    if (U.total.serie.every(d => d.y === 0)) avisos.push('Nenhum registro encontrado para estes códigos nesta base e critério.');
+    $('r-aviso').hidden = !avisos.length; $('r-aviso').innerHTML = avisos.join('<br>');
+    $('g-sub').textContent = nomeMedida();
+    $('f-sub').textContent = 'Taxa por milhão do mesmo sexo e faixa · 2020 excluído';
+    grade(); forest(); tabela();
+  }
+
+  function grade() {
+    const U = ultimo, dec = decs(), fxs = [...new Set(U.est.map(e => e.fx))];
+    const maxComum = Math.max(1e-9, ...U.est.flatMap(e => e.serie.map(d => valor(d) || 0)));
+    let h = '<div></div><div class="cab">Homens</div><div class="cab">Mulheres</div>';
+    fxs.forEach(fx => {
+      h += `<div class="fx">${M.faixas[fx - 1]}</div>`;
+      [1, 2].forEach(s => {
+        const e = U.est.find(e => e.s === s && e.fx === fx);
+        const vmax = escala === 'comum' ? maxComum : Math.max(1e-9, ...e.serie.map(d => valor(d) || 0));
+        h += `<div class="cel">${mini(e, vmax, dec)}${resumo(e)}</div>`;
+      });
+    });
+    $('grade').innerHTML = h;
+  }
+  function mini(e, vmax, dec) {
+    const W = 300, H = 92, mt = 6, mb = 14, n = e.serie.length, bw = W / n, larg = bw * 0.68;
+    const y = (v) => mt + (H - mt - mb) * (1 - v / vmax);
+    let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${e.ns} ${e.nfx}">`;
+    s += `<line x1="0" x2="${W}" y1="${y(0)}" y2="${y(0)}" stroke="var(--grid)"/>`;
+    e.serie.forEach((d, i) => {
+      const v = valor(d) || 0, x = bw * i + (bw - larg) / 2, hh = Math.max(0, y(0) - y(v)), r = Math.min(3, hh / 2, larg / 2);
+      const op = d.jan || d.per === 'trans' ? 1 : 0.4;
+      if (hh > 0) s += `<path d="M${x},${y(0)} V${y(v) + r} Q${x},${y(v)} ${x + r},${y(v)} H${x + larg - r} Q${x + larg},${y(v)} ${x + larg},${y(v) + r} V${y(0)} Z" fill="${corPer[d.per]}" opacity="${op}"/>`;
+      if (i === 0 || i === n - 1 || d.ano === M.pos[0]) s += `<text x="${bw * i + bw / 2}" y="${H - 2}" text-anchor="middle">${String(d.ano).slice(2)}</text>`;
+      s += `<rect x="${bw * i}" y="0" width="${bw}" height="${H - mb}" fill="transparent" data-dica="${encodeURIComponent(`<b>${e.ns} ${e.nfx} · ${d.ano}</b><br>${fmt(d.y)} casos${d.taxa != null ? ` · ${fmt(d.taxa, 1)} por milhão` : ''}${d.per === 'trans' ? '<br>2020 – excluído' : !d.usado ? `<br>excluído (${d.meses} de 12 meses)` : !d.jan ? '<br>fora da comparação simétrica (entra só na tendência)' : ''}`)}"/>`;
+    });
+    ['pre', 'pos'].forEach(per => {
+      const u = e.serie.map((d, i) => [d, i]).filter(([d]) => d.jan && d.per === per);
+      if (!u.length) return;
+      const m = u.reduce((t, [d]) => t + (valor(d) || 0), 0) / u.length;
+      s += `<line x1="${bw * u[0][1] + 2}" x2="${bw * (u[u.length - 1][1] + 1) - 2}" y1="${y(m)}" y2="${y(m)}" stroke="var(--text-primary)" stroke-width="1.4" stroke-dasharray="4 3" opacity=".75" pointer-events="none"/>`;
+    });
+    return s + '</svg>';
+  }
+  function resumo(e) {
+    const R = e.R;
+    if (!R.ok) return `<div class="res"><span>${fmt(R.cpre)} → ${fmt(R.cpos)} casos</span><span class="ns">dados insuficientes</span></div>`;
+    const sig = R.pHolm != null && R.pHolm < 0.05;
+    const tag = sig ? `<span class="sig">${R.rr > 1 ? '▲ aumento' : '▼ queda'}</span>` : '<span class="ns">não signif.</span>';
+    return `<div class="res"><span>RR <b>${fmt(R.rr, 2)}</b> (${fmt(R.rrInf, 2)}–${fmt(R.rrSup, 2)})</span>${tag}</div>`;
+  }
+
+  function forest() {
+    const U = ultimo;
+    const est = (e) => modelo === 'a' ? { rr: e.R.rr, lo: e.R.rrInf, hi: e.R.rrSup, p: e.R.pHolm } : { rr: e.R.salto, lo: e.R.saltoInf, hi: e.R.saltoSup, p: e.R.pSaltoHolm };
+    const todos = U.est.map(est).filter(v => v.rr != null && isFinite(v.rr));
+    if (!todos.length) { $('forest').innerHTML = '<p class="vazio">Sem dados suficientes.</p>'; return; }
+    let lo = Math.max(0.2, Math.min(0.8, ...todos.map(v => v.lo ?? v.rr))), hi = Math.min(8, Math.max(1.25, ...todos.map(v => v.hi ?? v.rr)));
+    const fxs = [...new Set(U.est.map(e => e.fx))];
+    $('forest').innerHTML = SX.map(([s, ns]) => {
+      const W = 460, ml = 52, mr = 14, row = 30, mt = 4, H = mt + row * fxs.length + 22;
+      const x = (v) => ml + (W - ml - mr) * (Math.log(Math.min(Math.max(v, lo), hi)) - Math.log(lo)) / (Math.log(hi) - Math.log(lo));
+      let g = `<div><h3>${ns}</h3><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Razão de taxas, ${ns}">`;
+      fxs.forEach((fx, i) => { if (i % 2 === 0) g += `<rect x="${ml}" y="${mt + row * i}" width="${W - ml - mr}" height="${row}" fill="var(--surface-2)"/>`; });
+      [0.5, 0.67, 0.8, 1, 1.25, 1.5, 2, 3, 5].filter(v => v >= lo && v <= hi).forEach(v => {
+        g += `<line x1="${x(v)}" x2="${x(v)}" y1="${mt}" y2="${H - 20}" stroke="${v === 1 ? 'var(--text-muted)' : 'var(--grid)'}" stroke-width="${v === 1 ? 1.5 : 1}"/>`;
+        g += `<text x="${x(v)}" y="${H - 6}" text-anchor="middle">${String(v).replace('.', ',')}</text>`;
+      });
+      fxs.forEach((fx, i) => {
+        const e = U.est.find(e => e.s === s && e.fx === fx), v = est(e), yc = mt + row * i + row / 2;
+        g += `<text x="${ml - 8}" y="${yc + 4}" text-anchor="end" style="fill:var(--text-secondary);font-size:11px">${M.faixas[fx - 1]}</text>`;
+        if (v.rr == null || !isFinite(v.rr)) return;
+        const sig = v.p != null && v.p < 0.05;
+        if (v.lo != null) g += `<line x1="${x(v.lo)}" x2="${x(v.hi)}" y1="${yc}" y2="${yc}" stroke="var(--ink)" stroke-width="2" stroke-linecap="round"/>`;
+        g += `<circle cx="${x(v.rr)}" cy="${yc}" r="5" fill="${sig ? 'var(--ink)' : 'var(--surface-1)'}" stroke="var(--ink)" stroke-width="2"/>`;
+        g += `<rect x="${ml}" y="${yc - row / 2}" width="${W - ml - mr}" height="${row}" fill="transparent" data-dica="${encodeURIComponent(`<b>${ns} ${M.faixas[fx - 1]}</b><br>${modelo === 'a' ? 'RR depois/antes' : 'Salto em 2021'} ${fmt(v.rr, 2)} (IC95 ${fmt(v.lo, 2)}–${fmt(v.hi, 2)})<br>p ajustado (Holm) ${fp(v.p)}${modelo === 'b' ? `<br>tendência pré ${fmt(e.R.tend, 1)}%/ano` : ''}`)}"/>`;
+      });
+      return g + '</svg></div>';
+    }).join('');
+  }
+
+  function tabela() {
+    const U = ultimo, dec = decs(), anos = U.anos;
+    const cab = `<tr><th>Sexo</th><th>Faixa</th>${anos.map(a => `<th class="${M.pre.includes(a) ? 'pre' : M.transicao.includes(a) ? 'tr' : 'pos'}">${a}</th>`).join('')}<th>Média antes</th><th>Média depois</th><th>RR (IC95)</th><th>p Holm</th><th>Salto 2021 (IC95)</th><th>p Holm</th></tr>`;
+    const lin = (ns, nfx, e, cls) => {
+      const R = e.R, mm = (per) => { const u = e.serie.filter(d => d.jan && d.per === per); return u.length ? u.reduce((s, d) => s + (valor(d) || 0), 0) / u.length : null; };
+      return `<tr class="${cls || ''}"><td>${ns}</td><td>${nfx}</td>${e.serie.map(d => `<td class="${d.jan ? '' : 'exc'}">${fmt(valor(d), dec)}</td>`).join('')}` +
+        `<td>${fmt(mm('pre'), dec)}</td><td>${fmt(mm('pos'), dec)}</td><td>${R.ok ? `${fmt(R.rr, 2)} (${fmt(R.rrInf, 2)}–${fmt(R.rrSup, 2)})` : '–'}</td><td>${fp(cls ? R.p : R.pHolm)}</td>` +
+        `<td>${R.salto != null ? `${fmt(R.salto, 2)} (${fmt(R.saltoInf, 2)}–${fmt(R.saltoSup, 2)})` : '–'}</td><td>${fp(cls ? R.pSalto : R.pSaltoHolm)}</td></tr>`;
+    };
+    $('tabela').innerHTML = `<table><thead>${cab}</thead><tbody>${U.est.map(e => lin(e.ns, e.nfx, e)).join('')}${lin('Total', 'todas', U.total, 'total')}</tbody></table>
+      <p class="sub" style="margin:8px 0 0">Valores em cinza: fora da comparação antes × depois (2020, ano incompleto ou ano sem par no outro período; este último ainda entra no cálculo da tendência). Na linha Total o p não é ajustado.</p>`;
+  }
+
+  function baixar() {
+    const U = ultimo; if (!U) return;
+    const cab = ['codigos', 'base', 'criterio', 'contagem', 'sexo', 'faixa', 'ano', 'periodo', 'casos', 'populacao', 'taxa_milhao', 'meses', 'na_comparacao', 'na_tendencia',
+                 'rr_depois_antes', 'ic95_inf', 'ic95_sup', 'p', 'p_holm', 'tendencia_pre_pct_ano', 'salto_2021', 'salto_ic95_inf', 'salto_ic95_sup', 'p_salto', 'p_salto_holm'];
+    const L = [cab.join(';')];
+    const n = (v, d = 6) => v == null || !isFinite(v) ? '' : String(+v.toFixed(d)).replace('.', ',');
+    U.est.concat([Object.assign({ ns: 'Total', nfx: 'todas' }, U.total)]).forEach(e => e.serie.forEach(d => L.push([
+      U.cods.join(' '), U.f, U.t, U.conta, e.ns, e.nfx, d.ano, d.per, d.y, n(d.pop, 0), n(d.taxa, 3), d.meses, d.jan ? 1 : 0, d.usado ? 1 : 0,
+      n(e.R.rr), n(e.R.rrInf), n(e.R.rrSup), n(e.R.p), n(e.R.pHolm), n(e.R.tend, 3), n(e.R.salto), n(e.R.saltoInf), n(e.R.saltoSup), n(e.R.pSalto), n(e.R.pSaltoHolm)
+    ].join(';'))));
+    const blob = new Blob(['﻿' + L.join('\r\n')], { type: 'text/csv;charset=utf-8' });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+    a.download = `comparacao_${U.f}_${U.t}_${U.cods.join('-').slice(0, 60)}.csv`; a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  }
+
+  // dica (tooltip) compartilhada
+  const dica = $('dica');
+  document.addEventListener('mousemove', (e) => {
+    const el = e.target.closest && e.target.closest('[data-dica]');
+    if (!el) { dica.style.opacity = 0; return; }
+    dica.innerHTML = decodeURIComponent(el.dataset.dica);
+    let x = e.clientX + 14; if (x + dica.offsetWidth > innerWidth - 8) x = e.clientX - dica.offsetWidth - 14;
+    dica.style.left = x + 'px'; dica.style.top = (e.clientY + 12) + 'px'; dica.style.opacity = 1;
+  });
+
+  const seg = (a, b, f) => { $(a).addEventListener('click', () => { $(a).setAttribute('aria-pressed', 'true'); $(b).setAttribute('aria-pressed', 'false'); f(); }); };
+  seg('esc-propria', 'esc-comum', () => { escala = 'propria'; ultimo && grade(); });
+  seg('esc-comum', 'esc-propria', () => { escala = 'comum'; ultimo && grade(); });
+  seg('mod-a', 'mod-b', () => { modelo = 'a'; ultimo && forest(); });
+  seg('mod-b', 'mod-a', () => { modelo = 'b'; ultimo && forest(); });
+  $('s-medida').addEventListener('change', () => ultimo && desenhaTudo());
+  $('gerar').addEventListener('click', gerar);
+  $('baixar').addEventListener('click', baixar);
+  $('gerado').textContent = `Dados gerados em ${M.gerado}. Fontes: DATASUS (SIH/SUS e SIM) e IBGE (população por sexo e idade).`;
+
+  // estado inicial: link salvo (#...) ou TVP em internações
+  const h = new URLSearchParams(location.hash.slice(1));
+  if (h.get('f') && M.fontes.includes(h.get('f'))) $('s-fonte').value = h.get('f');
+  atualizaTipos(h.get('t'));
+  if (h.get('o')) $('s-conta').value = h.get('o');
+  if (h.get('m')) $('s-medida').value = h.get('m');
+  $('todas-faixas').checked = h.get('fx') === 'todas';
+  codigos = h.get('c') ? h.get('c').split(',').filter(Boolean) : ATALHOS[0].c.slice();
+  desenhaChips(); verificaSel();
+  if (h.get('c')) gerar();
+})();
+</script>
+</body>
+</html>

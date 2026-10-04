@@ -1,0 +1,14 @@
+[{"id":"606","variavel":"População","unidade":"Pessoas","resultados":[
+ {"classificacoes":[{"id":"2","nome":"Sexo","categoria":{"4":"Homens"}},{"id":"287","nome":"Idade","categoria":{"93088":"25 anos"}}],
+  "series":[{"localidade":{"id":"1","nivel":{"id":"N1","nome":"Brasil"},"nome":"Brasil"},"serie":{"2019":"1600000"}},
+            {"localidade":{"id":"33","nivel":{"id":"N3","nome":"Unidade da Federação"},"nome":"Rio de Janeiro"},"serie":{"2019":"130000"}}]},
+ {"classificacoes":[{"id":"2","nome":"Sexo","categoria":{"5":"Mulheres"}},{"id":"287","nome":"Idade","categoria":{"6653":"90 anos ou mais"}}],
+  "series":[{"localidade":{"id":"1","nivel":{"id":"N1","nome":"Brasil"},"nome":"Brasil"},"serie":{"2019":"300000"}}]},
+ {"classificacoes":[{"id":"2","nome":"Sexo","categoria":{"5":"Mulheres"}},{"id":"287","nome":"Idade","categoria":{"9999":"80 anos ou mais"}}],
+  "series":[{"localidade":{"id":"1","nivel":{"id":"N1","nome":"Brasil"},"nome":"Brasil"},"serie":{"2019":"999999"}}]},
+ {"classificacoes":[{"id":"2","nome":"Sexo","categoria":{"5":"Mulheres"}},{"id":"287","nome":"Idade","categoria":{"93070":"89 anos"}}],
+  "series":[{"localidade":{"id":"1","nivel":{"id":"N1","nome":"Brasil"},"nome":"Brasil"},"serie":{"2019":"50000"}}]},
+ {"classificacoes":[{"id":"2","nome":"Sexo","categoria":{"6794":"Total"}},{"id":"287","nome":"Idade","categoria":{"93088":"25 anos"}}],
+  "series":[{"localidade":{"id":"1","nivel":{"id":"N1","nome":"Brasil"},"nome":"Brasil"},"serie":{"2019":"3200000"}}]},
+ {"classificacoes":[{"id":"2","nome":"Sexo","categoria":{"4":"Homens"}},{"id":"287","nome":"Idade","categoria":{"100362":"20 a 24 anos"}}],
+  "series":[{"localidade":{"id":"1","nivel":{"id":"N1","nome":"Brasil"},"nome":"Brasil"},"serie":{"2019":"8000000"}}]}]}]

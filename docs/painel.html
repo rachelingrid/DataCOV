@@ -1,0 +1,344 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Painel TEV-SUS</title>
+<style>
+  :root {
+    color-scheme: light;
+    --surface-0: #f4f3ef;
+    --surface-1: #fcfcfb;
+    --border: #dddcd5;
+    --grid: #e8e7e1;
+    --text-primary: #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted: #7a7974;
+    --pre: #2a78d6;
+    --pos: #eb6834;
+    --trans: #9a998f;
+    --accent: #2a78d6;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) {
+      color-scheme: dark;
+      --surface-0: #121211;
+      --surface-1: #1a1a19;
+      --border: #34332f;
+      --grid: #2a2a27;
+      --text-primary: #ffffff;
+      --text-secondary: #c3c2b7;
+      --text-muted: #8f8e85;
+      --pre: #3987e5;
+      --pos: #d95926;
+      --trans: #75746c;
+      --accent: #3987e5;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --surface-0: #121211; --surface-1: #1a1a19; --border: #34332f; --grid: #2a2a27;
+    --text-primary: #ffffff; --text-secondary: #c3c2b7; --text-muted: #8f8e85;
+    --pre: #3987e5; --pos: #d95926; --trans: #75746c; --accent: #3987e5;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--surface-0); color: var(--text-primary);
+    font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  main { max-width: 980px; margin: 0 auto; padding: 24px 16px 48px; }
+  h1 { font-size: 22px; margin: 0 0 4px; letter-spacing: -0.01em; }
+  .sub { color: var(--text-secondary); margin: 0 0 20px; font-size: 14px; }
+  .filtros { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 16px; }
+  .filtros label { display: flex; flex-direction: column; font-size: 12px; color: var(--text-secondary); gap: 4px; flex: 1 1 180px; }
+  select {
+    width: 100%; min-width: 0;
+    font: inherit; font-size: 14px; padding: 8px 10px; border-radius: 8px;
+    border: 1px solid var(--border); background: var(--surface-1); color: var(--text-primary);
+  }
+  .cartao { background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 16px; }
+  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 16px; }
+  .kpi { background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; }
+  .kpi .rot { font-size: 12px; color: var(--text-secondary); display: flex; align-items: center; gap: 6px; }
+  .kpi .val { font-size: 26px; font-weight: 600; font-variant-numeric: tabular-nums; margin-top: 2px; }
+  .kpi .det { font-size: 12px; color: var(--text-muted); }
+  .sw { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+  .titulo-graf { font-size: 15px; font-weight: 600; margin: 0 0 2px; }
+  .legenda { display: flex; gap: 16px; flex-wrap: wrap; font-size: 12px; color: var(--text-secondary); margin: 6px 0 8px; }
+  .legenda span { display: inline-flex; align-items: center; gap: 6px; }
+  #grafico { position: relative; }
+  svg { display: block; width: 100%; height: auto; overflow: visible; }
+  .eixo text { fill: var(--text-muted); font-size: 11px; }
+  .dica {
+    position: absolute; pointer-events: none; background: var(--surface-1); border: 1px solid var(--border);
+    border-radius: 8px; padding: 8px 10px; font-size: 12px; box-shadow: 0 4px 16px rgba(0,0,0,.12);
+    opacity: 0; transition: opacity .1s; white-space: nowrap; z-index: 2;
+  }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; }
+  th, td { padding: 6px 8px; border-bottom: 1px solid var(--grid); text-align: right; }
+  th:first-child, td:first-child { text-align: left; }
+  th { color: var(--text-secondary); font-weight: 500; }
+  details summary { cursor: pointer; color: var(--text-secondary); font-size: 14px; }
+  .nota { font-size: 13px; color: var(--text-secondary); }
+  .nota li { margin-bottom: 4px; }
+  .aviso { font-size: 13px; color: var(--text-secondary); border-left: 3px solid var(--pos); padding: 4px 10px; margin-top: 10px; }
+  .vazio { padding: 40px 0; text-align: center; color: var(--text-muted); }
+</style>
+</head>
+<body>
+<main>
+  <h1>Trombose, embolia, gestação e amputação no SUS</h1>
+  <p class="sub"><a href="index.html" style="color:var(--accent)">← Comparar qualquer CID ou procedimento</a> · <a href="faixas.html" style="color:var(--accent)">Grupos do estudo por faixa →</a></p>
+  <p class="sub" id="sub">Microdados SIM, SIH e SINASC/DATASUS e população IBGE · comparação pré e pós-pandemia</p>
+
+  <div class="filtros">
+    <label>Base
+      <select id="f-fonte"></select>
+    </label>
+    <label>Grupo
+      <select id="f-grupo"></select>
+    </label>
+    <label>Local de residência
+      <select id="f-uf"></select>
+    </label>
+    <label>Critério
+      <select id="f-medida"></select>
+    </label>
+  </div>
+
+  <div class="kpis" id="kpis"></div>
+
+  <div class="cartao">
+    <p class="titulo-graf" id="titulo"></p>
+    <div class="legenda">
+      <span><i class="sw" style="background:var(--pre)"></i>Pré-pandemia</span>
+      <span><i class="sw" style="background:var(--trans)"></i>2020 (transição)</span>
+      <span><i class="sw" style="background:var(--pos)"></i>Pós-pandemia</span>
+      <span>* ano parcial ou preliminar</span>
+    </div>
+    <div id="grafico"><div class="dica" id="dica"></div></div>
+    <div class="aviso" id="aviso" hidden></div>
+  </div>
+
+  <div class="cartao">
+    <details>
+      <summary>Tabela dos valores</summary>
+      <div id="tabela" style="margin-top:10px; overflow-x:auto"></div>
+    </details>
+  </div>
+
+  <div class="cartao nota">
+    <p class="titulo-graf">Como ler</p>
+    <ul>
+      <li><b>Qualquer menção</b>: o código aparece em qualquer linha do atestado (SIM) ou em qualquer diagnóstico da internação (SIH). <b>Causa básica / diagnóstico principal</b> é o critério padrão do Tabnet.</li>
+      <li><b>Óbitos hospitalares</b> (SIH) são mortes durante a internação, não o total de óbitos pela doença.</li>
+      <li>SIM e SIH não registram a idade gestacional da mãe. O trimestre só é medido nos <b>natimortos</b>; para gestantes, o "1º trimestre" é um proxy (aborto, ectópica, mola: O00–O08).</li>
+      <li>Comparação simétrica: o mesmo número de anos antes e depois de 2020 (anos completos depois × os anos imediatamente anteriores). 2020 e anos incompletos ficam fora. Dados preliminares ainda podem mudar.</li>
+      <li>SIH conta internações (uma pessoa pode ter várias), pelo ano de processamento (competência).</li>
+      <li><b>Taxas por milhão</b> usam a população residente do IBGE (estimativas anuais; Censo 2022; 2023 interpolado e 2026 extrapolado). <b>Gestantes</b>: por 100 mil nascidos vivos (SINASC), como a razão de mortalidade materna. <b>Natimortos</b>: por mil nascimentos (nascidos vivos + natimortos). Em anos parciais a taxa é anualizada.</li>
+    </ul>
+    <p id="gerado"></p>
+  </div>
+</main>
+
+<script src="dados.js"></script>
+<script>
+(function () {
+  const D = window.DADOS;
+  const $ = (id) => document.getElementById(id);
+  if (!D || !D.linhas || !D.linhas.length) {
+    $('grafico').innerHTML = '<p class="vazio">Ainda não há dados. Rode o workflow "Atualizar dados DATASUS" no GitHub.</p>';
+    return;
+  }
+  const NOMES_FONTE = { SIM: 'Óbitos (SIM)', SIH: 'Internações (SIH)', DOFET: 'Natimortos (SIM fetal)', SINASC: 'Denominadores (SINASC / IBGE)' };
+  const NOMES_GRUPO = {
+    TROMBOSE: 'Trombose', EMBOLIA: 'Embolia (qualquer)', TEV: 'Trombose ou embolia',
+    TEV_COVID: 'Trombose/embolia com COVID-19',
+    GESTANTE: 'Gestantes e puérperas (todas as causas)', GESTANTE_TEV: 'Gestantes com trombose/embolia',
+    GESTANTE_TRI1_PROXY: 'Gestantes – 1º trimestre (proxy O00–O08)',
+    GESTANTE_GRAVIDEZ: 'Gestantes – óbito durante a gravidez', GESTANTE_PUERPERIO: 'Puérperas – óbito no puerpério',
+    NATIMORTO: 'Natimortos – total', NATIMORTO_TRI1: 'Natimortos – 1º trimestre (≤13 sem)',
+    NATIMORTO_TRI2: 'Natimortos – 2º trimestre (14–27 sem)', NATIMORTO_TRI3: 'Natimortos – 3º trimestre (≥28 sem)',
+    NATIMORTO_TRI_IGN: 'Natimortos – idade gestacional ignorada', NATIMORTO_TEV: 'Natimortos com menção de TEV',
+    AMPUTACAO: 'Amputação – total', AMP_MMII: 'Amputação – membros inferiores e pé',
+    AMP_MMSS: 'Amputação – membros superiores e mão', AMP_DEDO: 'Amputação – dedos',
+    AMP_DIABETES: 'Amputação com diabetes', AMP_VASCULAR: 'Amputação com doença arterial',
+    AMP_TRAUMA: 'Amputação com trauma de membro', NASCIDOS_VIVOS: 'Nascidos vivos'
+  };
+  const CONT = {
+    SIM:   [['n_qualquer', 'Óbitos – qualquer menção'], ['n_principal', 'Óbitos – causa básica']],
+    DOFET: [['n_qualquer', 'Natimortos – qualquer menção'], ['n_principal', 'Natimortos – causa básica']],
+    SIH:   [['n_qualquer', 'Internações – qualquer diagnóstico'], ['n_principal', 'Internações – diagnóstico principal'],
+            ['obitos_qualquer', 'Óbitos hospitalares – qualquer diagnóstico'], ['obitos_principal', 'Óbitos hospitalares – diag. principal']],
+    SINASC: [['n_qualquer', 'Nascidos vivos']]
+  };
+  // medidas disponiveis para a fonte/grupo escolhidos: contagens, taxas por
+  // milhao de habitantes e taxa especifica (gestantes / natimortos)
+  function medidasDe(fonte, grupo) {
+    const c = CONT[fonte] || CONT.SIM, out = [];
+    if (fonte === 'SINASC') return c.concat([['populacao', 'População residente (IBGE)']]);
+    const esp = grupo.startsWith('GESTANTE') ? ' por 100 mil nascidos vivos' : grupo.startsWith('NATIMORTO') ? ' por mil nascimentos' : null;
+    c.forEach(([k, t]) => out.push([k, t + ' (nº)']));
+    c.forEach(([k, t]) => out.push(['tx_milhao_' + k, t + ' por milhão de hab.']));
+    if (esp) c.forEach(([k, t]) => out.push(['tx_especifica_' + k, t + esp]));
+    if (fonte === 'SIH') out.push(['letalidade', 'Letalidade hospitalar (%) – qualquer diagnóstico']);
+    return out;
+  }
+  const UFS = { BR: 'Brasil', AC:'Acre', AL:'Alagoas', AM:'Amazonas', AP:'Amapá', BA:'Bahia', CE:'Ceará', DF:'Distrito Federal',
+    ES:'Espírito Santo', GO:'Goiás', MA:'Maranhão', MG:'Minas Gerais', MS:'Mato Grosso do Sul', MT:'Mato Grosso', PA:'Pará',
+    PB:'Paraíba', PE:'Pernambuco', PI:'Piauí', PR:'Paraná', RJ:'Rio de Janeiro', RN:'Rio Grande do Norte', RO:'Rondônia',
+    RR:'Roraima', RS:'Rio Grande do Sul', SC:'Santa Catarina', SE:'Sergipe', SP:'São Paulo', TO:'Tocantins', IG:'Ignorado' };
+
+  const col = {}; D.colunas.forEach((c, i) => col[c] = i);
+  const linhas = D.linhas;
+  const fmt = (v, dec) => v == null || isNaN(v) ? '–' : v.toLocaleString('pt-BR', { maximumFractionDigits: dec ?? 0, minimumFractionDigits: dec ?? 0 });
+  const periodo = (a) => D.pre.includes(a) ? 'pre' : D.transicao.includes(a) ? 'trans' : 'pos';
+
+  function opcoes(sel, lista, atual) {
+    sel.innerHTML = lista.map(([v, t]) => `<option value="${v}">${t}</option>`).join('');
+    if (lista.some(([v]) => v === atual)) sel.value = atual;
+  }
+  const uniq = (a) => [...new Set(a)];
+
+  function popula(manter) {
+    const fonte = $('f-fonte').value;
+    const grupos = uniq(linhas.filter(l => l[0] === fonte).map(l => l[1]));
+    const ordem = Object.keys(NOMES_GRUPO);
+    grupos.sort((a, b) => ordem.indexOf(a) - ordem.indexOf(b));
+    opcoes($('f-grupo'), grupos.map(g => [g, NOMES_GRUPO[g] || g]), manter.grupo);
+    const ufs = uniq(linhas.filter(l => l[0] === fonte).map(l => l[2])).sort((a, b) => a === 'BR' ? -1 : b === 'BR' ? 1 : (UFS[a]||a).localeCompare(UFS[b]||b));
+    opcoes($('f-uf'), ufs.map(u => [u, UFS[u] || u]), manter.uf || 'BR');
+    opcoes($('f-medida'), medidasDe(fonte, $('f-grupo').value), manter.medida);
+  }
+
+  const ORD = ['SIM', 'SIH', 'DOFET', 'SINASC'];
+  const fontes = uniq(linhas.map(l => l[0])).sort((a, b) => ORD.indexOf(a) - ORD.indexOf(b));
+  opcoes($('f-fonte'), fontes.map(f => [f, NOMES_FONTE[f] || f]));
+  popula({});
+
+  function serie() {
+    const f = $('f-fonte').value, g = $('f-grupo').value, u = $('f-uf').value, m = $('f-medida').value;
+    // anos com dados na fonte (para preencher zeros) e meses de cobertura
+    const anosFonte = {};
+    linhas.filter(l => l[0] === f && l[2] === 'BR').forEach(l => {
+      anosFonte[l[3]] = { meses: Math.max(anosFonte[l[3]]?.meses || 0, l[col.meses]), prel: (anosFonte[l[3]]?.prel || 0) || l[col.preliminar] };
+    });
+    const sel = {}, popAno = {};
+    linhas.filter(l => l[2] === u && l[col.populacao] != null).forEach(l => popAno[l[3]] = l[col.populacao]);
+    linhas.filter(l => l[0] === f && l[1] === g && l[2] === u).forEach(l => sel[l[3]] = l);
+    return Object.keys(anosFonte).map(Number).sort((a, b) => a - b).map(a => {
+      const l = sel[a];
+      let v;
+      if (m === 'letalidade') v = l && l[col.n_qualquer] > 0 ? 100 * l[col.obitos_qualquer] / l[col.n_qualquer] : null;
+      else if (m.startsWith('tx_') || m === 'populacao') v = l ? l[col[m]] : (popAno[a] != null && m.startsWith('tx_milhao') ? 0 : null);
+      else v = l ? l[col[m]] : 0;
+      const info = anosFonte[a];
+      return { ano: a, v, meses: info.meses, prel: !!(info.prel || (l && l[col.preliminar])), parcial: info.meses < 12, p: periodo(a) };
+    });
+  }
+
+  function media(s, per) {
+    // janela simetrica: k anos completos depois x k anos imediatamente antes de 2020
+    const comp = s.filter(d => d.v != null && (D.incluir_parciais || !d.parcial));
+    let a = comp.filter(d => d.p === 'pre'), b = comp.filter(d => d.p === 'pos');
+    if (D.simetrico) { const k = Math.min(a.length, b.length); a = a.slice(a.length - k); b = b.slice(0, k); }
+    const ok = per === 'pre' ? a : b;
+    return ok.length ? { v: ok.reduce((t, d) => t + d.v, 0) / ok.length, n: ok.length, anos: ok.map(d => d.ano) } : { v: null, n: 0, anos: [] };
+  }
+
+  function desenha() {
+    const s = serie();
+    const m = $('f-medida').value, pct = m === 'letalidade', taxa = m.startsWith('tx_'), dec = pct ? 1 : taxa ? 2 : 0;
+    const nomeMed = $('f-medida').selectedOptions[0].text;
+    $('titulo').textContent = `${NOMES_GRUPO[$('f-grupo').value] || $('f-grupo').value} · ${nomeMed} · ${UFS[$('f-uf').value] || $('f-uf').value}`;
+    const pre = media(s, 'pre'), pos = media(s, 'pos'), t20 = s.find(d => d.p === 'trans');
+    const varp = pre.v > 0 && pos.v != null ? (pct ? pos.v - pre.v : 100 * (pos.v / pre.v - 1)) : null;
+    const faixa = (a) => a.length ? `${a[0]}–${a[a.length - 1]}` : 'sem dados';
+    const sinal = varp == null ? '' : varp > 0 ? '+' : '';
+    $('kpis').innerHTML = `
+      <div class="kpi"><div class="rot"><i class="sw" style="background:var(--pre)"></i>Média anual pré</div><div class="val">${fmt(pre.v, dec)}</div><div class="det">${faixa(pre.anos)} (${pre.n} anos)</div></div>
+      <div class="kpi"><div class="rot"><i class="sw" style="background:var(--trans)"></i>2020</div><div class="val">${fmt(t20?.v, dec)}</div><div class="det">ano de transição</div></div>
+      <div class="kpi"><div class="rot"><i class="sw" style="background:var(--pos)"></i>Média anual pós</div><div class="val">${fmt(pos.v, dec)}</div><div class="det">${faixa(pos.anos)} (${pos.n} anos)</div></div>
+      <div class="kpi"><div class="rot">Variação pós × pré</div><div class="val">${varp == null ? '–' : sinal + fmt(varp, 1) + (pct ? ' p.p.' : '%')}</div><div class="det">${pct ? 'diferença em pontos percentuais' : 'razão das médias anuais'}</div></div>`;
+
+    const parc = s.filter(d => d.parcial || d.prel);
+    const aviso = $('aviso');
+    if (parc.length) {
+      aviso.hidden = false;
+      aviso.textContent = parc.map(d => d.parcial ? `${d.ano}: ${d.meses} de 12 meses${taxa ? ' (taxa anualizada)' : ''}` : `${d.ano}: dado preliminar`).join(' · ');
+    } else aviso.hidden = true;
+
+    // gráfico de barras
+    const W = Math.max(300, $('grafico').clientWidth || 900), H = W < 600 ? 240 : 320, ml = W < 600 ? 40 : 56, mr = 12, mt = 18, mb = 30;
+    const vals = s.map(d => d.v || 0);
+    const max = Math.max(1, ...vals, pre.v || 0, pos.v || 0);
+    const passo = escala(max);
+    const topo = Math.ceil(max / passo) * passo;
+    const y = (v) => mt + (H - mt - mb) * (1 - v / topo);
+    const bw = (W - ml - mr) / s.length;
+    const larg = Math.min(48, bw * 0.62);
+    let svg = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${$('titulo').textContent}">`;
+    svg += '<g class="eixo">';
+    for (let v = 0; v <= topo + 1e-9; v += passo) {
+      svg += `<line x1="${ml}" x2="${W - mr}" y1="${y(v)}" y2="${y(v)}" stroke="var(--grid)" stroke-width="1"/>`;
+      svg += `<text x="${ml - 8}" y="${y(v) + 4}" text-anchor="end">${fmt(v, passo < 1 ? (passo < 0.1 ? 2 : 1) : 0)}</text>`;
+    }
+    s.forEach((d, i) => {
+      const cx = ml + bw * i + bw / 2;
+      svg += `<text x="${cx}" y="${H - 10}" text-anchor="middle">${W < 600 ? "'" + String(d.ano).slice(2) : d.ano}${d.parcial || d.prel ? '*' : ''}</text>`;
+    });
+    svg += '</g>';
+    // médias como linhas tracejadas sobre os anos do período
+    [[pre, 'var(--pre)'], [pos, 'var(--pos)']].forEach(([mm, cor]) => {
+      if (mm.v == null) return;
+      const i0 = s.findIndex(d => d.ano === mm.anos[0]), i1 = s.findIndex(d => d.ano === mm.anos[mm.anos.length - 1]);
+      svg += `<line x1="${ml + bw * i0 + 4}" x2="${ml + bw * (i1 + 1) - 4}" y1="${y(mm.v)}" y2="${y(mm.v)}" stroke="${cor}" stroke-width="2" stroke-dasharray="5 4" opacity=".9"/>`;
+    });
+    s.forEach((d, i) => {
+      const cx = ml + bw * i + bw / 2, v = d.v || 0;
+      const cor = d.p === 'pre' ? 'var(--pre)' : d.p === 'trans' ? 'var(--trans)' : 'var(--pos)';
+      const h = Math.max(0, y(0) - y(v)), r = Math.min(4, h / 2, larg / 2);
+      const x0 = cx - larg / 2, y0 = y(v), yb = y(0);
+      if (h > 0) svg += `<path d="M${x0},${yb} V${y0 + r} Q${x0},${y0} ${x0 + r},${y0} H${x0 + larg - r} Q${x0 + larg},${y0} ${x0 + larg},${y0 + r} V${yb} Z" fill="${cor}" opacity="${d.parcial || d.prel ? 0.55 : 1}"/>`;
+      svg += `<rect x="${ml + bw * i}" y="${mt}" width="${bw}" height="${H - mt - mb}" fill="transparent" data-i="${i}"/>`;
+    });
+    svg += `<line x1="${ml}" x2="${W - mr}" y1="${y(0)}" y2="${y(0)}" stroke="var(--text-muted)" stroke-width="1"/>`;
+    svg += '</svg>';
+    const g = $('grafico');
+    g.innerHTML = '<div class="dica" id="dica"></div>' + svg;
+    const dica = $('dica');
+    g.querySelectorAll('rect[data-i]').forEach(r => {
+      r.addEventListener('mousemove', (e) => {
+        const d = s[+r.dataset.i];
+        const nomeP = d.p === 'pre' ? 'Pré-pandemia' : d.p === 'trans' ? 'Transição' : 'Pós-pandemia';
+        dica.innerHTML = `<b>${d.ano}</b> · ${nomeP}<br>${nomeMed}: <b>${fmt(d.v, dec)}</b>${d.parcial ? `<br>${d.meses} de 12 meses` : ''}${d.prel ? '<br>dado preliminar' : ''}`;
+        const b = g.getBoundingClientRect();
+        let x = e.clientX - b.left + 12;
+        if (x + 220 > b.width) x = e.clientX - b.left - 200;
+        dica.style.left = x + 'px'; dica.style.top = (e.clientY - b.top - 10) + 'px'; dica.style.opacity = 1;
+      });
+      r.addEventListener('mouseleave', () => dica.style.opacity = 0);
+    });
+
+    $('tabela').innerHTML = '<table><thead><tr><th>Ano</th><th>Período</th><th>' + nomeMed + '</th><th>Meses</th></tr></thead><tbody>' +
+      s.map(d => `<tr><td>${d.ano}${d.prel ? ' (prelim.)' : ''}</td><td>${d.p === 'pre' ? 'Pré' : d.p === 'trans' ? 'Transição' : 'Pós'}</td><td>${fmt(d.v, dec)}</td><td>${d.meses}</td></tr>`).join('') +
+      '</tbody></table>';
+  }
+
+  function escala(max) {
+    const bruto = max / 5, p = Math.pow(10, Math.floor(Math.log10(bruto)));
+    const n = bruto / p;
+    return (n <= 1 ? 1 : n <= 2 ? 2 : n <= 5 ? 5 : 10) * p;
+  }
+
+  const estado = () => ({ grupo: $('f-grupo').value, uf: $('f-uf').value, medida: $('f-medida').value });
+  $('f-fonte').addEventListener('change', () => { popula(estado()); desenha(); });
+  $('f-grupo').addEventListener('change', () => { opcoes($('f-medida'), medidasDe($('f-fonte').value, $('f-grupo').value), $('f-medida').value); desenha(); });
+  ['f-uf', 'f-medida'].forEach(id => $(id).addEventListener('change', desenha));
+  $('gerado').textContent = `Dados gerados em ${D.gerado}. Fontes: DATASUS/Ministério da Saúde (SIM, SIH-RD, SINASC) e IBGE (população).`;
+  desenha();
+  let t; window.addEventListener('resize', () => { clearTimeout(t); t = setTimeout(desenha, 150); });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,298 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TVP por faixa etária</title>
+<style>
+  :root {
+    color-scheme: light;
+    --surface-0: #f4f3ef; --surface-1: #fcfcfb; --border: #dddcd5; --grid: #e8e7e1;
+    --text-primary: #0b0b0b; --text-secondary: #52514e; --text-muted: #7a7974;
+    --hom: #2a78d6; --mul: #eb6834; --band: #efeee8; --ref: #7a7974; --pos-band: #f6ece6;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) {
+      color-scheme: dark;
+      --surface-0: #121211; --surface-1: #1a1a19; --border: #34332f; --grid: #2a2a27;
+      --text-primary: #ffffff; --text-secondary: #c3c2b7; --text-muted: #8f8e85;
+      --hom: #3987e5; --mul: #d95926; --band: #222220; --ref: #8f8e85; --pos-band: #2a211c;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --surface-0: #121211; --surface-1: #1a1a19; --border: #34332f; --grid: #2a2a27;
+    --text-primary: #ffffff; --text-secondary: #c3c2b7; --text-muted: #8f8e85;
+    --hom: #3987e5; --mul: #d95926; --band: #222220; --ref: #8f8e85; --pos-band: #2a211c;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--surface-0); color: var(--text-primary);
+         font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 980px; margin: 0 auto; padding: 24px 16px 48px; }
+  a { color: var(--hom); }
+  h1 { font-size: 22px; margin: 0 0 4px; letter-spacing: -0.01em; }
+  .sub { color: var(--text-secondary); margin: 0 0 20px; font-size: 14px; }
+  .filtros { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 16px; }
+  .filtros label { display: flex; flex-direction: column; font-size: 12px; color: var(--text-secondary); gap: 4px; flex: 1 1 180px; min-width: 0; }
+  select { width: 100%; font: inherit; font-size: 14px; padding: 8px 10px; border-radius: 8px;
+           border: 1px solid var(--border); background: var(--surface-1); color: var(--text-primary); }
+  .cartao { background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 16px; }
+  .titulo-graf { font-size: 15px; font-weight: 600; margin: 0 0 2px; }
+  .expl { font-size: 13px; color: var(--text-secondary); margin: 0 0 8px; }
+  .legenda { display: flex; gap: 16px; flex-wrap: wrap; font-size: 12px; color: var(--text-secondary); margin: 6px 0 4px; }
+  .legenda span { display: inline-flex; align-items: center; gap: 6px; }
+  .pt { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+  .pt.vazio { background: transparent !important; border: 2px solid var(--text-secondary); width: 10px; height: 10px; }
+  .graf { position: relative; }
+  svg { display: block; width: 100%; height: auto; overflow: visible; }
+  svg text { fill: var(--text-muted); font-size: 11px; }
+  svg .rot { fill: var(--text-secondary); font-size: 12px; }
+  .dica { position: absolute; pointer-events: none; background: var(--surface-1); border: 1px solid var(--border);
+          border-radius: 8px; padding: 8px 10px; font-size: 12px; box-shadow: 0 4px 16px rgba(0,0,0,.12);
+          opacity: 0; transition: opacity .1s; white-space: nowrap; z-index: 2; }
+  .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; margin-bottom: 8px; }
+  .seg button { font: inherit; font-size: 13px; padding: 6px 12px; border: 0; background: var(--surface-1); color: var(--text-secondary); cursor: pointer; }
+  .seg button[aria-pressed="true"] { background: var(--text-primary); color: var(--surface-1); }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; }
+  th, td { padding: 6px 8px; border-bottom: 1px solid var(--grid); text-align: right; white-space: nowrap; }
+  th:nth-child(-n+2), td:nth-child(-n+2) { text-align: left; }
+  th { color: var(--text-secondary); font-weight: 500; }
+  tbody tr { cursor: pointer; }
+  tbody tr:hover, tbody tr.sel { background: var(--band); }
+  .tag { font-size: 11px; padding: 1px 6px; border-radius: 999px; border: 1px solid var(--border); color: var(--text-secondary); }
+  .tag.aumento { border-color: var(--text-primary); color: var(--text-primary); font-weight: 600; }
+  .nota { font-size: 13px; color: var(--text-secondary); }
+  .nota li { margin-bottom: 6px; }
+  .vazio-msg { padding: 40px 0; text-align: center; color: var(--text-muted); }
+  .rolagem { overflow-x: auto; }
+</style>
+</head>
+<body>
+<main>
+  <p class="sub" style="margin:0 0 6px"><a href="index.html">← Comparar qualquer CID</a> · <a href="painel.html">Painel dos grupos</a></p>
+  <h1>Mesma faixa etária, antes e depois da pandemia</h1>
+  <p class="sub">Taxa por milhão de habitantes do mesmo sexo e faixa · mesmo número de anos antes e depois de 2020 · 2020 excluído</p>
+
+  <div class="filtros">
+    <label>Base <select id="f-fonte"></select></label>
+    <label>Grupo <select id="f-grupo"></select></label>
+    <label>Critério <select id="f-medida"></select></label>
+  </div>
+
+  <div class="cartao">
+    <p class="titulo-graf">Razão de taxas pós ÷ pré, por sexo e faixa</p>
+    <div class="seg" role="group" aria-label="Modelo">
+      <button id="m-a" aria-pressed="true">Comparação pós × pré</button>
+      <button id="m-b" aria-pressed="false">Descontando a tendência pré</button>
+    </div>
+    <p class="expl" id="expl"></p>
+    <div class="legenda">
+      <span><i class="pt" style="background:var(--hom)"></i>Homens</span>
+      <span><i class="pt" style="background:var(--mul)"></i>Mulheres</span>
+      <span><i class="pt" style="background:var(--text-secondary)"></i>significativo (Holm, p&lt;0,05)</span>
+      <span><i class="pt vazio"></i>não significativo</span>
+    </div>
+    <div class="graf" id="forest"></div>
+  </div>
+
+  <div class="cartao">
+    <p class="titulo-graf" id="tit-serie"></p>
+    <p class="expl">Taxa anual por milhão. Linhas tracejadas: média de cada período. Clique numa linha da tabela para trocar o estrato.</p>
+    <div class="graf" id="serie"></div>
+  </div>
+
+  <div class="cartao">
+    <p class="titulo-graf">Resultados por estrato</p>
+    <div class="rolagem" id="tabela"></div>
+  </div>
+
+  <div class="cartao nota">
+    <p class="titulo-graf">Como ler</p>
+    <ul>
+      <li><b>RR (razão de taxas)</b> = taxa média pós ÷ taxa média pré na mesma faixa e sexo. RR 1,30 = 30% a mais. O intervalo de 95% que não cruza 1 indica diferença.</li>
+      <li><b>Comparação pós × pré</b> (quasi-Poisson): responde "a taxa ficou maior depois?". Não diz se o aumento vem da pandemia ou de uma tendência que já existia.</li>
+      <li><b>Descontando a tendência pré</b> (série temporal interrompida): projeta a tendência de 2014–2019 e mede o salto em 2021 acima dela. É o teste que sustenta uma associação com a pandemia, mas com só 6 anos pré tem pouco poder.</li>
+      <li><b>Holm</b>: p-valor corrigido para os 14 testes (7 faixas × 2 sexos), para não declarar aumento por acaso em uma das faixas.</li>
+      <li>"TVP sem COVID" exclui internações/óbitos com COVID-19 registrada: se o aumento persiste ali, não é só a fase aguda da infecção.</li>
+    </ul>
+    <p id="gerado"></p>
+  </div>
+</main>
+<script src="faixas.js"></script>
+<script>
+(function () {
+  const F = window.FAIXAS;
+  const $ = (id) => document.getElementById(id);
+  if (!F || !F.teste) {
+    $('forest').innerHTML = '<p class="vazio-msg">Ainda não há análise por faixa. Rode o workflow "Atualizar dados DATASUS" (precisa da população por sexo e idade do IBGE).</p>';
+    return;
+  }
+  const idx = (t) => { const o = {}; t.colunas.forEach((c, i) => o[c] = i); return o; };
+  const CT = idx(F.teste), CA = idx(F.anual);
+  const T = F.teste.linhas, AN = F.anual.linhas;
+  const NF = { SIH: 'Internações (SIH)', SIM: 'Óbitos (SIM)' };
+  const NG = { TVP: 'TVP', TVP_SEMCOVID: 'TVP sem COVID-19', TVP_TEP: 'TVP ou embolia pulmonar', TEV: 'Trombose ou embolia', EMBOLIA: 'Embolia', AMPUTACAO: 'Amputação' };
+  const NM = { n_qualquer: 'Qualquer menção / diagnóstico', n_principal: 'Causa básica / diagnóstico principal' };
+  const SX = { M: 'Homens', F: 'Mulheres' };
+  const COR = { M: 'var(--hom)', F: 'var(--mul)' };
+  const fmt = (v, d) => v == null || isNaN(v) ? '–' : v.toLocaleString('pt-BR', { minimumFractionDigits: d, maximumFractionDigits: d });
+  const fp = (p) => p == null ? '–' : p < 0.001 ? '<0,001' : fmt(p, 3);
+  const uniq = (a) => [...new Set(a)];
+  let modelo = 'a', sel = null;
+
+  function opcoes(id, vals, nomes) {
+    const s = $(id), atual = s.value;
+    s.innerHTML = vals.map(v => `<option value="${v}">${nomes[v] || v}</option>`).join('');
+    if (vals.includes(atual)) s.value = atual;
+  }
+  opcoes('f-fonte', uniq(T.map(r => r[CT.fonte])), NF);
+  function popula() {
+    const f = $('f-fonte').value;
+    opcoes('f-grupo', uniq(T.filter(r => r[CT.fonte] === f).map(r => r[CT.grupo])), NG);
+    opcoes('f-medida', uniq(T.filter(r => r[CT.fonte] === f).map(r => r[CT.medida])), NM);
+  }
+  popula();
+
+  function linhas() {
+    const f = $('f-fonte').value, g = $('f-grupo').value, m = $('f-medida').value;
+    return T.filter(r => r[CT.fonte] === f && r[CT.grupo] === g && r[CT.medida] === m && r[CT.uf] === 'BR');
+  }
+  function est(r) {
+    return modelo === 'a'
+      ? { rr: r[CT.rr_pos_pre], lo: r[CT.ic95_inf], hi: r[CT.ic95_sup], p: r[CT.p_holm] }
+      : { rr: r[CT.salto_2021_rr], lo: r[CT.salto_ic95_inf], hi: r[CT.salto_ic95_sup], p: r[CT.p_salto_holm] };
+  }
+
+  function forest() {
+    $('expl').textContent = modelo === 'a'
+      ? 'Taxa média 2021+ ÷ taxa média 2014–2019. Não separa efeito da pandemia de tendência que já vinha subindo.'
+      : 'Salto em 2021 acima do que a tendência de 2014–2019 previa. Valor > 1 com IC acima de 1 sugere aumento associado ao período pós-pandemia.';
+    const L = linhas();
+    const faixas = uniq(L.map(r => r[CT.faixa])).sort();
+    const vals = L.map(est).filter(e => e.rr != null);
+    if (!vals.length) { $('forest').innerHTML = '<p class="vazio-msg">Sem dados suficientes para este recorte.</p>'; return; }
+    let lo = Math.min(0.8, ...vals.map(e => e.lo ?? e.rr)), hi = Math.max(1.25, ...vals.map(e => e.hi ?? e.rr));
+    lo = Math.max(lo, 0.1); hi = Math.min(hi, 10);
+    const W = Math.max(320, $('forest').clientWidth || 900), ml = 64, mr = 16, mt = 8, row = 34, H = mt + row * faixas.length + 28;
+    const x = (v) => ml + (W - ml - mr) * (Math.log(Math.min(Math.max(v, lo), hi)) - Math.log(lo)) / (Math.log(hi) - Math.log(lo));
+    const ticks = [0.5, 0.67, 0.8, 1, 1.25, 1.5, 2, 3, 5].filter(t => t >= lo && t <= hi);
+    let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Razão de taxas por faixa e sexo">`;
+    faixas.forEach((fx, i) => { if (i % 2 === 0) s += `<rect x="${ml}" y="${mt + row * i}" width="${W - ml - mr}" height="${row}" fill="var(--band)"/>`; });
+    ticks.forEach(t => {
+      s += `<line x1="${x(t)}" x2="${x(t)}" y1="${mt}" y2="${H - 24}" stroke="${t === 1 ? 'var(--ref)' : 'var(--grid)'}" stroke-width="${t === 1 ? 1.5 : 1}"/>`;
+      s += `<text x="${x(t)}" y="${H - 8}" text-anchor="middle">${fmt(t, t === 1 ? 0 : 2).replace(/,?0+$/, '')}</text>`;
+    });
+    faixas.forEach((fx, i) => {
+      const yc = mt + row * i + row / 2;
+      s += `<text class="rot" x="${ml - 10}" y="${yc + 4}" text-anchor="end">${fx}</text>`;
+      ['M', 'F'].forEach((sx, k) => {
+        const r = L.find(r => r[CT.faixa] === fx && r[CT.sexo] === sx); if (!r) return;
+        const e = est(r); if (e.rr == null) return;
+        const y = yc + (k === 0 ? -6 : 6), sig = e.p != null && e.p < 0.05;
+        if (e.lo != null) s += `<line x1="${x(e.lo)}" x2="${x(e.hi)}" y1="${y}" y2="${y}" stroke="${COR[sx]}" stroke-width="2" stroke-linecap="round"/>`;
+        s += `<circle cx="${x(e.rr)}" cy="${y}" r="5" fill="${sig ? COR[sx] : 'var(--surface-1)'}" stroke="${COR[sx]}" stroke-width="2"/>`;
+        s += `<rect x="${ml}" y="${y - 6}" width="${W - ml - mr}" height="12" fill="transparent" data-k="${fx}|${sx}"/>`;
+      });
+    });
+    s += '</svg><div class="dica" id="dica-f"></div>';
+    const g = $('forest'); g.innerHTML = s;
+    const dica = $('dica-f');
+    g.querySelectorAll('rect[data-k]').forEach(el => {
+      const [fx, sx] = el.dataset.k.split('|');
+      const r = L.find(r => r[CT.faixa] === fx && r[CT.sexo] === sx), e = est(r);
+      el.addEventListener('mousemove', (ev) => {
+        dica.innerHTML = `<b>${SX[sx]} ${fx}</b><br>RR ${fmt(e.rr, 2)} (IC95 ${fmt(e.lo, 2)}–${fmt(e.hi, 2)})<br>p ajustado (Holm) ${fp(e.p)}<br>Taxa pré ${fmt(r[CT.taxa_pre_milhao], 1)} · pós ${fmt(r[CT.taxa_pos_milhao], 1)} /milhão`;
+        const b = g.getBoundingClientRect(); let px = ev.clientX - b.left + 12; if (px + 240 > b.width) px -= 260;
+        dica.style.left = px + 'px'; dica.style.top = (ev.clientY - b.top - 10) + 'px'; dica.style.opacity = 1;
+      });
+      el.addEventListener('mouseleave', () => dica.style.opacity = 0);
+      el.addEventListener('click', () => { sel = { fx, sx }; serie(); tabela(); });
+      el.style.cursor = 'pointer';
+    });
+  }
+
+  function serie() {
+    const L = linhas();
+    if (!sel || !L.find(r => r[CT.faixa] === sel.fx && r[CT.sexo] === sel.sx)) {
+      const best = L.map(r => [r, est(r)]).filter(([, e]) => e.rr != null).sort((a, b) => (a[1].p ?? 1) - (b[1].p ?? 1))[0];
+      if (!best) { $('serie').innerHTML = ''; $('tit-serie').textContent = ''; return; }
+      sel = { fx: best[0][CT.faixa], sx: best[0][CT.sexo] };
+    }
+    const f = $('f-fonte').value, g = $('f-grupo').value, m = $('f-medida').value;
+    const pts = AN.filter(r => r[CA.fonte] === f && r[CA.grupo] === g && r[CA.medida] === m && r[CA.uf] === 'BR' && r[CA.sexo] === sel.sx && r[CA.faixa] === sel.fx && r[CA.taxa_milhao] != null)
+                  .sort((a, b) => a[CA.ano] - b[CA.ano]);
+    $('tit-serie').textContent = `${NG[g] || g} · ${SX[sel.sx]} ${sel.fx} · ${NF[f] || f}`;
+    if (!pts.length) { $('serie').innerHTML = ''; return; }
+    const W = Math.max(320, $('serie').clientWidth || 900), H = W < 600 ? 220 : 280, ml = 48, mr = 12, mt = 12, mb = 28;
+    const anos = pts.map(p => p[CA.ano]), a0 = Math.min(...anos), a1 = Math.max(...anos);
+    const vmax = Math.max(...pts.map(p => p[CA.taxa_milhao])) * 1.12;
+    const x = (a) => ml + (W - ml - mr) * (a - a0 + 0.5) / (a1 - a0 + 1);
+    const y = (v) => mt + (H - mt - mb) * (1 - v / vmax);
+    const passo = (() => { const b = vmax / 4, p = Math.pow(10, Math.floor(Math.log10(b))), n = b / p; return (n <= 1 ? 1 : n <= 2 ? 2 : n <= 5 ? 5 : 10) * p; })();
+    let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Taxa anual">`;
+    const xb = (a) => ml + (W - ml - mr) * (a - a0) / (a1 - a0 + 1);
+    s += `<rect x="${xb(F.pos[0])}" y="${mt}" width="${W - mr - xb(F.pos[0])}" height="${H - mt - mb}" fill="var(--pos-band)"/>`;
+    for (let v = 0; v <= vmax; v += passo) {
+      s += `<line x1="${ml}" x2="${W - mr}" y1="${y(v)}" y2="${y(v)}" stroke="var(--grid)"/>`;
+      s += `<text x="${ml - 6}" y="${y(v) + 4}" text-anchor="end">${fmt(v, passo < 1 ? 1 : 0)}</text>`;
+    }
+    anos.forEach(a => s += `<text x="${x(a)}" y="${H - 8}" text-anchor="middle">${W < 600 ? "'" + String(a).slice(2) : a}</text>`);
+    s += `<text x="${xb(F.pos[0]) + 6}" y="${mt + 12}" text-anchor="start">pós-pandemia</text>`;
+    const usados = pts.filter(p => p[CA.usado] === 1);
+    const naJanela = pts.filter(p => CA.janela == null ? p[CA.usado] === 1 : p[CA.janela] === 1);
+    ['pre', 'pos'].forEach(per => {
+      const pp = naJanela.filter(p => p[CA.periodo] === per); if (!pp.length) return;
+      const mc = pp.reduce((t, p) => t + p[CA.casos], 0) / pp.reduce((t, p) => t + p[CA.populacao] * p[CA.meses] / 12, 0) * 1e6;
+      s += `<line x1="${x(pp[0][CA.ano]) - 10}" x2="${x(pp[pp.length - 1][CA.ano]) + 10}" y1="${y(mc)}" y2="${y(mc)}" stroke="var(--text-secondary)" stroke-width="1.5" stroke-dasharray="5 4"/>`;
+    });
+    const seg = (arr) => arr.map((p, i) => `${i ? 'L' : 'M'}${x(p[CA.ano])},${y(p[CA.taxa_milhao])}`).join(' ');
+    const pre = usados.filter(p => p[CA.periodo] === 'pre'), pos = usados.filter(p => p[CA.periodo] === 'pos');
+    [pre, pos].forEach(a => { if (a.length > 1) s += `<path d="${seg(a)}" fill="none" stroke="${COR[sel.sx]}" stroke-width="2"/>`; });
+    pts.forEach(p => {
+      const u = p[CA.usado] === 1;
+      s += `<circle cx="${x(p[CA.ano])}" cy="${y(p[CA.taxa_milhao])}" r="5" fill="${u ? COR[sel.sx] : 'var(--surface-1)'}" stroke="${u ? 'var(--surface-1)' : 'var(--text-muted)'}" stroke-width="2"/>`;
+      s += `<rect x="${x(p[CA.ano]) - 14}" y="${mt}" width="28" height="${H - mt - mb}" fill="transparent" data-a="${p[CA.ano]}"/>`;
+    });
+    s += '</svg><div class="dica" id="dica-s"></div>';
+    const box = $('serie'); box.innerHTML = s;
+    const dica = $('dica-s');
+    box.querySelectorAll('rect[data-a]').forEach(el => {
+      const p = pts.find(p => p[CA.ano] === +el.dataset.a);
+      el.addEventListener('mousemove', (ev) => {
+        const obs = p[CA.periodo] === 'pandemia' ? 'excluído (pandemia)' : !p[CA.usado] ? `excluído (${p[CA.meses]} de 12 meses)` : (CA.janela != null && !p[CA.janela]) ? 'fora da comparação simétrica (só tendência)' : '';
+        dica.innerHTML = `<b>${p[CA.ano]}</b> ${obs}<br>${fmt(p[CA.taxa_milhao], 1)} por milhão<br>${fmt(p[CA.casos], 0)} casos · pop. ${fmt(p[CA.populacao], 0)}`;
+        const b = box.getBoundingClientRect(); let px = ev.clientX - b.left + 12; if (px + 200 > b.width) px -= 220;
+        dica.style.left = px + 'px'; dica.style.top = (ev.clientY - b.top - 10) + 'px'; dica.style.opacity = 1;
+      });
+      el.addEventListener('mouseleave', () => dica.style.opacity = 0);
+    });
+  }
+
+  function tabela() {
+    const L = linhas().slice().sort((a, b) => a[CT.sexo] === b[CT.sexo] ? a[CT.faixa].localeCompare(b[CT.faixa]) : (a[CT.sexo] === 'M' ? -1 : 1));
+    $('tabela').innerHTML = `<table><thead><tr><th>Sexo</th><th>Faixa</th><th>Taxa pré</th><th>Taxa pós</th><th>RR pós/pré (IC95)</th><th>p Holm</th><th>Tendência pré %/ano</th><th>Salto 2021 (IC95)</th><th>p Holm</th><th></th></tr></thead><tbody>` +
+      L.map(r => {
+        const s = sel && sel.fx === r[CT.faixa] && sel.sx === r[CT.sexo];
+        const tag = r[CT.significativo] ? `<span class="tag ${r[CT.significativo]}">${r[CT.significativo]}</span>` : '';
+        return `<tr data-k="${r[CT.faixa]}|${r[CT.sexo]}" class="${s ? 'sel' : ''}"><td>${SX[r[CT.sexo]]}</td><td>${r[CT.faixa]}</td>` +
+          `<td>${fmt(r[CT.taxa_pre_milhao], 1)}</td><td>${fmt(r[CT.taxa_pos_milhao], 1)}</td>` +
+          `<td>${fmt(r[CT.rr_pos_pre], 2)} (${fmt(r[CT.ic95_inf], 2)}–${fmt(r[CT.ic95_sup], 2)})</td><td>${fp(r[CT.p_holm])}</td>` +
+          `<td>${fmt(r[CT.tendencia_pre_pct_ano], 1)}</td><td>${fmt(r[CT.salto_2021_rr], 2)} (${fmt(r[CT.salto_ic95_inf], 2)}–${fmt(r[CT.salto_ic95_sup], 2)})</td><td>${fp(r[CT.p_salto_holm])}</td><td>${tag}</td></tr>`;
+      }).join('') + '</tbody></table>';
+    $('tabela').querySelectorAll('tbody tr').forEach(tr => tr.addEventListener('click', () => {
+      const [fx, sx] = tr.dataset.k.split('|'); sel = { fx, sx }; serie(); tabela();
+    }));
+  }
+
+  function tudo() { forest(); serie(); tabela(); }
+  $('f-fonte').addEventListener('change', () => { popula(); tudo(); });
+  ['f-grupo', 'f-medida'].forEach(id => $(id).addEventListener('change', tudo));
+  $('m-a').addEventListener('click', () => { modelo = 'a'; $('m-a').setAttribute('aria-pressed', 'true'); $('m-b').setAttribute('aria-pressed', 'false'); forest(); });
+  $('m-b').addEventListener('click', () => { modelo = 'b'; $('m-b').setAttribute('aria-pressed', 'true'); $('m-a').setAttribute('aria-pressed', 'false'); forest(); });
+  let t; window.addEventListener('resize', () => { clearTimeout(t); t = setTimeout(tudo, 150); });
+  $('gerado').textContent = `Gerado em ${F.gerado}. Fontes: DATASUS (SIM, SIH) e IBGE (projeção da população por sexo e idade).`;
+  tudo();
+})();
+</script>
+</body>
+</html>
