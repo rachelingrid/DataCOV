@@ -1,10 +1,10 @@
-# andesedepoisCOV19
+# DataCOV
 
 **Internações e óbitos no SUS antes e depois da COVID-19, por CID-10 ou procedimento, faixa etária e sexo.**
 
 Este repositório baixa os microdados públicos do DATASUS, os mesmos que alimentam o Tabnet. Com eles, compara as taxas de 2015–2019 com as de 2021 em diante, excluindo 2020. A coleta e o processamento rodam no próprio GitHub, e o resultado é um site estático que funciona também offline.
 
-🔗 **Site:** https://rachelingrid.github.io/andesedepoisCOV19/
+🔗 **Site:** https://rachelingrid.github.io/DataCOV/
 
 ---
 
@@ -166,7 +166,7 @@ octave-cli --path octave --path config --eval "consolida; compara_faixas; consol
 
 ## Como citar
 
-Jannuzzi, Rachel Ingrid Pereira da Rocha. *andesedepoisCOV19: internações e óbitos no SUS antes e depois da COVID-19, por CID-10, faixa etária e sexo*. 2026. Repositório GitHub. ORCID: [0000-0002-0408-6302](https://orcid.org/0000-0002-0408-6302).
+Jannuzzi, Rachel Ingrid Pereira da Rocha. *DataCOV: internações e óbitos no SUS antes e depois da COVID-19, por CID-10, faixa etária e sexo*. 2026. Repositório GitHub. ORCID: [0000-0002-0408-6302](https://orcid.org/0000-0002-0408-6302).
 
 ## Licença: todos os direitos reservados
 
