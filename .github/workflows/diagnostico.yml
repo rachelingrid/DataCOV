@@ -1,0 +1,33 @@
+name: Diagnostico FTP DATASUS
+
+# Testa o acesso ao FTP do DATASUS a partir do GitHub. Resultados aparecem
+# como avisos (annotations) no resumo da execucao.
+on:
+  workflow_dispatch:
+  push:
+    paths: [".github/workflows/diagnostico.yml"]
+
+jobs:
+  ftp:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Testes de conexao
+        shell: bash
+        run: |
+          av() { echo "::warning title=$1::$2"; }
+          H=ftp.datasus.gov.br
+          av DNS "$(getent hosts $H | head -2 | tr '\n' ' ' || echo falhou)"
+          av "porta 21" "$(timeout 15 bash -c "exec 3<>/dev/tcp/$H/21 && head -c 120 <&3" 2>&1 | tr '\r\n' '  ' || echo sem resposta)"
+          for opt in "" "--disable-epsv" "--ftp-port -" "--ftp-method nocwd"; do
+            out=$(curl -sS --connect-timeout 30 --max-time 60 $opt --list-only "ftp://$H/dissemin/publicos/SIM/CID10/DORES/" 2>&1 | head -c 300 | tr '\r\n' '  ')
+            av "curl lista ${opt:-padrao}" "$out"
+          done
+          out=$(curl -sS -v --connect-timeout 30 --max-time 60 --list-only "ftp://$H/dissemin/publicos/SIM/CID10/DORES/" 2>&1 | grep -E '^[<>*]' | head -25 | tr '\r\n' '  ')
+          av "curl verboso" "${out:0:900}"
+          t0=$(date +%s); curl -sS --disable-epsv --max-time 120 -o /tmp/x.dbc "ftp://$H/dissemin/publicos/SIM/CID10/DORES/DORJ2019.dbc" 2>&1 | head -c 200; t1=$(date +%s)
+          av "download DORJ2019" "$(stat -c %s /tmp/x.dbc 2>/dev/null || echo 0) bytes em $((t1-t0))s"
+          av "IP externo do runner" "$(curl -sS --max-time 20 https://api.ipify.org 2>&1)"
+          for u in https://servicodados.ibge.gov.br/api/v3/agregados/7358/metadados https://apisidra.ibge.gov.br/values/t/6579/n1/all/v/9324/p/2019 https://s3.sa-east-1.amazonaws.com/ckan.saude.gov.br/; do
+            av "http $u" "$(curl -sS -o /dev/null -w '%{http_code} %{time_total}s' --max-time 60 "$u" 2>&1)"
+          done
