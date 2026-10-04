@@ -198,7 +198,10 @@
   const $ = (id) => document.getElementById(id);
   const M = window.META, NOMES = window.NOMES || {}, E = window.Estat;
   if (!M || !M.fontes || !M.fontes.length) {
-    document.querySelector('main').insertAdjacentHTML('beforeend', '<p class="vazio">Ainda não há dados. Rode o workflow "Atualizar dados DATASUS" no GitHub.</p>');
+    const sel = document.querySelector('section[aria-label="Seleção"]');
+    sel.insertAdjacentHTML('beforebegin', '<div class="cartao" style="border-left:4px solid var(--aviso)"><h2>Ainda não há dados carregados</h2><p class="sub" style="margin:0">A coleta dos microdados do DATASUS ainda não foi concluída, por isso os menus estão vazios. Assim que o workflow <b>Atualizar dados DATASUS</b> terminar com dados, esta página passa a funcionar sozinha.</p></div>');
+    sel.querySelectorAll('select, input, button').forEach(el => el.disabled = true);
+    sel.style.opacity = '.5';
     return;
   }
 
